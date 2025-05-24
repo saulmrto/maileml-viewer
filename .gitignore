@@ -1,0 +1,16 @@
+# Archivos de datos de usuario
+Pop3MailDownloader_UserData/
+*_UserData/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+env/
+venv/
+.env
+
+# Archivos de sistema operativo
+.DS_Store
+Thumbs.db
