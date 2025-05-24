@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Explorador de Correos Electrónicos Respaldados</title>
+    <title>Backed Up Email Explorer</title>
     <style>
-        /* Estilos generales para el cuerpo de la página */
         body {
             font-family: 'Arial', sans-serif;
             margin: 0;
@@ -15,8 +14,6 @@
             line-height: 1.6;
             color: #333;
         }
-
-        /* Estilos para el título principal de la página */
         h1 {
             text-align: center;
             color: #2c3e50;
@@ -24,7 +21,6 @@
             margin-bottom: 20px;
         }
 
-        /* Estilos para el área de filtros (barra superior) */
         .filter-bar {
             margin-bottom: 20px;
             padding: 20px;
@@ -37,13 +33,11 @@
             justify-content: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-        /* Estilos para las etiquetas dentro de la barra de filtros */
         .filter-bar label {
             font-weight: bold;
             color: #34495e;
             display: inline-block;
         }
-        /* Estilos para los campos de entrada de texto, fecha, select y botón dentro de la barra de filtros */
         .filter-bar input[type="text"],
         .filter-bar input[type="date"],
         .filter-bar select,
@@ -57,7 +51,6 @@
             flex-grow: 1;
             min-width: 100px;
         }
-         /* Ajuste específico para el botón para que no crezca tanto como los inputs */
          .filter-bar button {
              flex-grow: 0;
              flex-shrink: 0;
@@ -70,17 +63,13 @@
              font-weight: bold;
          }
 
-         /* Estilo específico para el selector (dropdown) */
          .filter-bar select {
              cursor: pointer;
          }
-        /* Estilo para el botón de filtro al pasar el el ratón por encima */
         .filter-bar button:hover {
             background-color: #2980b9;
         }
 
-
-        /* Estilos para el contenedor de paginación */
         .pagination {
             display: flex;
             align-items: center;
@@ -94,7 +83,6 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-         /* Estilos para los botones dentro de la sección de paginación */
          .pagination button {
             padding: 10px 15px;
             border: 1px solid #bdc3c7;
@@ -105,41 +93,38 @@
             transition: background-color 0.3s ease, opacity 0.3s ease;
              font-weight: bold;
         }
-        /* Estilos específicos para los botones "Anterior" y "Siguiente" */
-        .pagination button#prevPageBtn,
-        .pagination button#nextPageBtn {
+        .pagination button#prevPageBtn, 
+        .pagination button#nextPageBtn,
+        .pagination button#prevPageBtn2,
+        .pagination button#nextPageBtn2 {
             background-color: #3498db;
             color: white;
         }
-         /* Estilos para los botones "Anterior" y "Siguiente" al pasar el ratón (si no están deshabilitados) */
-         .pagination button#prevPageBtn:hover:not(:disabled),
-         .pagination button#nextPageBtn:hover:not(:disabled) {
+         .pagination button#prevPageBtn:hover:not(:disabled), 
+         .pagination button#nextPageBtn:hover:not(:disabled),
+         .pagination button#prevPageBtn2:hover:not(:disabled),
+         .pagination button#nextPageBtn2:hover:not(:disabled) {
              background-color: #2980b9;
          }
 
-        /* Estilos para los botones de paginación al pasar el ratón (si no están deshabilitados) */
         .pagination button:hover:not(:disabled) {
             background-color: #ecf0f1;
         }
-        /* Estilos para los botones de paginación cuando están deshabilitados */
         .pagination button:disabled {
             cursor: not-allowed;
             opacity: 0.6;
              background-color: #bdc3c7;
              color: #7f8c8d;
         }
-        /* Estilos para el texto de información de la página (ej. "Página 1 de 1") */
         .pagination span {
             margin: 0 10px;
             font-weight: bold;
             color: #34495e;
         }
-         /* Estilos para las etiquetas dentro de la sección de paginación */
          .pagination label {
              font-weight: bold;
              color: #34495e;
          }
-         /* Estilos para el selector de elementos por página */
          .pagination select {
              padding: 8px 10px;
              border: 1px solid #bdc3c7;
@@ -147,65 +132,27 @@
              font-size: 1em;
              cursor: pointer;
          }
-
-        /* Estilos para el input de número de página */
         .pagination input[type="number"] {
-            width: 50px; /* Ancho fijo para el input de página */
+            width: 50px; 
             text-align: center;
             padding: 8px 5px;
             border: 1px solid #bdc3c7;
             border-radius: 4px;
             font-size: 1em;
-            -moz-appearance: textfield; /* Oculta las flechas en Firefox */
+            -moz-appearance: textfield;
         }
-        /* Oculta las flechas en Chrome, Safari, Edge */
         .pagination input[type="number"]::-webkit-outer-spin-button,
         .pagination input[type="number"]::-webkit-inner-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
 
-
-        /* Estilos para el mensaje de carga */
-        .loading {
-            display: none;
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            font-size: 18px;
-            background: white;
-            padding: 15px 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            z-index: 1000;
-            text-align: center;
-             border: 1px solid #bdc3c7;
-        }
-         .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-        /* Definición de la animación de giro (keyframes) */
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-
-        /* Estilos para la tabla de correos */
         .email-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
             table-layout: fixed;
         }
-
-        /* Estilos para las celdas de encabezado de la tabla */
         .email-table th {
             background-color: #3498db;
             color: white;
@@ -213,8 +160,6 @@
             text-align: left;
             border-bottom: 2px solid #2980b9;
         }
-
-         /* Estilos para las celdas de datos de la tabla */
         .email-table td {
             padding: 10px;
             border-bottom: 1px solid #ddd;
@@ -227,77 +172,56 @@
              text-overflow: ellipsis;
         }
 
-        /* Definir anchos fijos para las columnas (ajustados para 6 columnas) */
-        .email-table th:nth-child(1), /* Columna 1: Fecha y Hora */
+        .email-table th:nth-child(1), 
         .email-table td:nth-child(1) {
             width: 10%;
             white-space: nowrap;
         }
 
-        .email-table th:nth-child(2), /* Columna 2: Asunto */
+        .email-table th:nth-child(2), 
         .email-table td:nth-child(2) {
-             /* El ancho del Asunto se ajustará automáticamente para llenar el espacio restante */
         }
 
-        .email-table th:nth-child(3), /* Columna 3: Remitente */
+        .email-table th:nth-child(3), 
         .email-table td:nth-child(3) {
             width: 20%;
         }
 
-        .email-table th:nth-child(4), /* Columna 4: Destinatario (ahora Buzón POP3) */
+        .email-table th:nth-child(4), 
         .email-table td:nth-child(4) {
             width: 20%;
         }
 
-        .email-table th:nth-child(5), /* Columna 5: Tamaño */
+        .email-table th:nth-child(5), 
         .email-table td:nth-child(5) {
             width: 8%;
             text-align: right;
         }
 
-        .email-table th:nth-child(6), /* Columna 6: Acciones */
+        .email-table th:nth-child(6), 
         .email-table td:nth-child(6) {
             width: 15%;
             text-align: center;
             white-space: nowrap;
         }
 
-
-        /* Estilos para la celda del asunto en la tabla (se simplifica para una sola línea) */
         .email-table td.subject-cell {
              display: table-cell;
-             -webkit-line-clamp: unset;
-             -webkit-box-orient: unset;
-             line-clamp: unset;
-             box-orient: unset;
         }
-
-        /* Estilos para las celdas de remitente y destinatario (aplicar recorte de una línea) */
-        .email-table td.sender-cell,
-        .email-table td.recipient-cell {
-        }
-
-
-        /* Estilos para las filas pares de la tabla */
         .email-table tbody tr:nth-child(even) {
             background-color: #f2f2f2;
         }
-
-        /* NUEVO: Estilo para filas de correos marcados como SPAM */
         .email-table tr.is-spam {
-            background-color: #ffe0e0; /* Rojo suave para el fondo */
-            color: #a00; /* Texto más oscuro para contraste */
-            border-left: 5px solid #e74c3c; /* Borde rojo más fuerte a la izquierda */
+            background-color: #ffe0e0;
+            color: #a00;
+            border-left: 5px solid #e74c3c;
         }
-        /* Asegurar que el estilo de spam prevalezca sobre el de filas pares/impares */
         .email-table tbody tr.is-spam:nth-child(even),
         .email-table tbody tr.is-spam:nth-child(odd) {
-            background-color: #ffe0e0; /* Sobrescribe el color de fondo de filas pares/impares */
+            background-color: #ffe0e0;
             color: #a00;
         }
 
-
-        /* Estilos para los botones de acción dentro de la tabla */
         .email-table td.actions-cell button {
             padding: 10px 15px;
             border: none;
@@ -312,13 +236,10 @@
             margin: 0 2px;
         }
 
-        /* Estilos para los botones de acción al pasar el ratón por encima */
          .email-table td.actions-cell button:hover {
              background-color: #2980b9;
          }
 
-
-        /* Hacer la tabla responsiva */
         @media (max-width: 768px) {
             .email-table {
                 table-layout: auto;
@@ -415,7 +336,6 @@
              }
         }
 
-        /* --- Estilos para el Modal de Advertencia de SPAM --- */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -463,34 +383,130 @@
             font-weight: bold;
             transition: background-color 0.3s ease;
         }
+
+        /* Language Selector Styling */
+        .language-selector {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #ecf0f1;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .language-selector label {
+            font-weight: bold;
+            color: #34495e;
+        }
+        .language-selector select {
+            padding: 8px 10px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: white;
+        }
+        .language-selector button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            background-color: #3498db;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        .language-selector button:hover {
+            background-color: #2980b9;
+        }
+
+        @media (max-width: 768px) {
+            .language-selector {
+                position: static; /* Remove absolute positioning on small screens */
+                margin-bottom: 20px;
+                width: calc(100% - 40px); /* Adjust width to fit padding */
+                justify-content: center;
+                flex-wrap: wrap;
+                top: auto;
+                right: auto;
+            }
+        }
+
+        /* Loading Indicator Styles */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(244, 247, 246, 0.85); /* Page background color with opacity */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000; /* Ensure it's on top of other content */
+            text-align: center;
+        }
+        .loading .spinner {
+            border: 8px solid #bdc3c7; /* Lighter border color */
+            border-top: 8px solid #3498db; /* Main theme color */
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        .loading p {
+            color: #2c3e50; /* Dark text color, similar to h1 */
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
 
-    <h1>Explorador de Correos Electrónicos Respaldados</h1>
+    <div class="language-selector">
+        <label for="languageSelect" id="labelLanguageSelect"></label>
+        <select id="languageSelect">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+        </select>
+        <button id="applyLanguageBtn"></button>
+    </div>
+
+    <h1 id="mainTitle"></h1>
 
     <div class="filter-bar">
-        <label for="filterSubject">Asunto:</label>
-        <input type="text" id="filterSubject" placeholder="Ej: Aviso de Cuenta">
+        <label for="filterSubject" id="labelFilterSubject"></label>
+        <input type="text" id="filterSubject">
 
-        <label for="filterSender">Remitente:</label>
-        <input type="text" id="filterSender" placeholder="Ej: Google o Gmail">
+        <label for="filterSender" id="labelFilterSender"></label>
+        <input type="text" id="filterSender">
 
-        <label for="filterRecipient">Buzón:</label> <select id="filterRecipient">
-            <option value="">Todos</option>
+        <label for="filterRecipient" id="labelFilterRecipient"></label> <select id="filterRecipient">
+            <option value="" id="filterRecipientAll"></option>
         </select>
 
-        <label for="filterDate">Fecha de recibido:</label>
+        <label for="filterDate" id="labelFilterDate"></label>
         <input type="date" id="filterDate">
 
-        <button id="applyFilterBtn">Aplicar Filtro</button>
+        <button id="applyFilterBtn"></button>
     </div>
 
     <div class="pagination">
-        <button id="prevPageBtn">Anterior</button>
-        <span>Página <input type="number" id="currentPageInput" class="page-input" value="1" min="1"> <span id="totalPagesSpan">de 1</span></span> <button id="nextPageBtn">Siguiente</button>
+        <button id="prevPageBtn"></button>
+        <span id="paginationPageSpan"></span> <input type="number" id="currentPageInput" class="page-input" value="1" min="1"> <span id="totalPagesSpan"></span> <button id="nextPageBtn"></button>
 
-         <label for="itemsPerPage">Correos Electrónicos por página:</label>
+         <label for="itemsPerPage" id="labelItemsPerPage"></label>
         <select id="itemsPerPage">
             <option value="10">10</option>
             <option value="20" selected>20</option>
@@ -499,29 +515,28 @@
         </select>
     </div>
 
-
     <table class="email-table">
         <thead>
             <tr>
-                <th>Fecha y Hora</th>
-                <th>Asunto</th>
-                <th>Remitente</th>
-                <th>Destinatario</th>
-                <th>Tamaño</th>
-                <th>Acciones</th>
+                <th id="tableHeaderDateTime"></th>
+                <th id="tableHeaderSubject"></th>
+                <th id="tableHeaderSender"></th>
+                <th id="tableHeaderRecipient"></th>
+                <th id="tableHeaderSize"></th>
+                <th id="tableHeaderActions"></th>
             </tr>
         </thead>
         <tbody id="email-list-body">
-            </tbody>
+        </tbody>
     </table>
 
     <div class="pagination">
-        <button id="prevPageBtn">Anterior</button>
-        <span>Página <input type="number" id="currentPageInput" class="page-input" value="1" min="1"> <span id="totalPagesSpan">de 1</span></span>
-        <button id="nextPageBtn">Siguiente</button>
+        <button id="prevPageBtn2"></button>
+        <span id="paginationPageSpan2"></span> <input type="number" id="currentPageInput2" class="page-input" value="1" min="1"> <span id="totalPagesSpan2"></span>
+        <button id="nextPageBtn2"></button>
 
-         <label for="itemsPerPage">Correos Electrónicos por página:</label>
-        <select id="itemsPerPage">
+         <label for="itemsPerPage2" id="labelItemsPerPage2"></label>
+        <select id="itemsPerPage2">
             <option value="10">10</option>
             <option value="20" selected>20</option>
             <option value="50">50</option>
@@ -531,99 +546,360 @@
 
     <div class="loading" id="loading">
         <div class="spinner"></div>
-        <p id="loadingMessage">Cargando Correos Electrónicos...</p>
+        <p id="loadingMessage"></p>
     </div>
 
     <div class="modal-overlay" id="spamModalOverlay">
         <div class="modal-content">
             <p class="modal-message" id="spamModalMessage"></p>
             <div class="modal-buttons">
-                <button id="viewSpamButton" style="background-color: #e74c3c; color: white;">Ver de todos modos</button>
-                <button id="cancelViewButton" style="background-color: #bdc3c7; color: #333;">Cancelar</button>
+                <button id="viewSpamButton" style="background-color: #e74c3c; color: white;"></button>
+                <button id="cancelViewButton" style="background-color: #bdc3c7; color: #333;"></button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- Variables Globales ---
-        // Almacena todos los metadatos de correos cargados del servidor.
-        let allEmails = [];
-        // Almacena los correos después de aplicar filtros.
-        let filteredEmails = [];
-        // Número de la página actual mostrada.
-        let currentPage = 1;
-        // Número de correos a mostrar por página, inicializado desde el selector.
-        // NOTA: Se usa querySelectorAll y se toma el primer elemento ya que hay dos bloques de paginación.
+        // Global variable for current language, fetched from server
+        let currentLanguage = 'en'; // Default to English, will be updated on load
+
+        // Translation object containing all UI and console messages
+        const TRANSLATIONS = {
+            "en": {
+                "language_select_label": "Language:",
+                "apply_language_btn": "Apply",
+                "title": "Backed Up Email Explorer",
+                "filter_subject_label": "Subject:",
+                "filter_subject_placeholder": "Eg: Account Notice",
+                "filter_sender_label": "Sender:",
+                "filter_sender_placeholder": "Eg: Google or Gmail",
+                "filter_recipient_label": "Mailbox:",
+                "filter_recipient_all": "All",
+                "filter_date_label": "Received Date:",
+                "apply_filter_btn": "Apply Filter",
+                "pagination_prev": "Previous",
+                "pagination_next": "Next",
+                "pagination_page": "Page",
+                "pagination_of": "of",
+                "pagination_emails_per_page": "Emails per page:",
+                "loading_emails": "Loading Emails...",
+                "processing_data": "Processing received data...",
+                "error_loading_emails": "Error loading emails.",
+                "no_emails_found_filters": "No emails found matching the filters.",
+                "table_header_datetime": "Date & Time",
+                "table_header_subject": "Subject",
+                "table_header_sender": "Sender",
+                "table_header_recipient": "Mailbox",
+                "table_header_size": "Size",
+                "table_header_actions": "Actions",
+                "action_view": "View",
+                "action_download": "Download",
+                "modal_security_alert": "Security Alert.",
+                "modal_spam_marked": "This Email is marked as SPAM.",
+                "modal_spam_score": "Spam Score:",
+                "modal_malicious_warning": "Opening it could expose your device to malicious software or reveal personal information.",
+                "modal_download_malicious_warning": "Downloading it could expose your device to malicious software or reveal personal information.",
+                "modal_continue_risk": "Do you wish to continue at your own risk?",
+                "modal_view_anyway": "View Anyway",
+                "modal_download_anyway": "Download Anyway",
+                "modal_cancel": "Cancel",
+                "error_invalid_file_path": "Error: Cannot open preview because the file path is invalid. Please check the email metadata.",
+                "error_popup_blocked": "The email preview could not be opened. Your browser might have blocked the pop-up window. Please check your pop-up blocker settings.",
+                "error_determine_email_action": "Error: Could not determine which email to view/download. Please try again.",
+                "unknown_date": "Unknown date",
+                "unknown_time": "Unknown time",
+                "unknown_size": "Unknown size",
+                "preview_simplified_message": "This is a simplified representation of the email. To view the full content with its original formatting, please download the file.",
+                "preview_download_button": "Download Email",
+                "preview_spam_warning": "Warning!<br>This email has been identified as SPAM.<br>Exercise caution when interacting with its content, as it could compromise your personal information.",
+                "preview_date_time": "Date & Time:",
+                "preview_from": "From:",
+                "preview_to": "To:",
+                "preview_cc": "CC:",
+                "preview_subject": "Subject:",
+                "preview_account": "Account:",
+                "preview_no_content": "No viewable content found in this email.",
+                "console_displaying_loading": "Displaying loading indicator: {message}",
+                "console_hiding_loading": "Hiding loading indicator.",
+                "console_updating_loading": "Updating loading message to: {message}",
+                "console_fetching_metadata": "Attempting to fetch email metadata from /list-eml",
+                "console_http_error_fetching": "HTTP error fetching emails: {status} - {statusText}",
+                "console_loaded_emails_success": "Successfully loaded {count} emails.",
+                "console_failed_load_emails": "Failed to load emails:",
+                "console_populating_recipient_filter": "Populating recipient filter options.",
+                "console_added_recipients": "Added {count} unique recipients to filter.",
+                "console_applying_filters": "Applying filters to email list.",
+                "console_filters_applied": "Filters applied. Found {count} matching emails.",
+                "console_apply_filter_clicked": "Apply Filter button clicked.",
+                "console_displaying_email_page": "Displaying email page...",
+                "console_no_emails_for_display": "No emails found matching current filters for display.",
+                "console_displaying_emails_from_index": "Displaying emails from index {startIndex} to {endIndex} on page {currentPage}.",
+                "console_pagination_updated": "Pagination controls updated. Current page: {currentPage}, Total pages: {totalPages}.",
+                "console_changing_page_by_direction": "Changing page by direction: {direction}",
+                "console_invalid_page_navigation": "Attempted to navigate to invalid page: {newPage}. Current page remains {currentPage}.",
+                "console_page_input_changed": "Page input changed.",
+                "console_invalid_page_input": "Invalid page input: {value}. Setting to page 1.",
+                "console_page_exceeds_total": "Page input {newPage} exceeds total pages {totalPages}. Setting to last page.",
+                "console_navigating_to_page": "Navigating to page: {newPage}",
+                "console_page_input_is_current": "Page input {newPage} is current page. No change.",
+                "console_updating_emails_per_page": "Updating emails per page...",
+                "console_changing_emails_per_page": "Changing emails per page to: {newItemsPerPage}",
+                "console_attempting_view_email": "Attempting to view email: {encodedPath}, isSpam: {isSpam}",
+                "console_displaying_spam_warning": "Displaying SPAM warning modal.",
+                "console_hiding_spam_warning": "Hiding SPAM warning modal.",
+                "console_error_invalid_file_path_preview": "Error: Cannot open preview because the file path is invalid.",
+                "console_popup_blocked_preview": "The email preview could not be opened. Your browser might have blocked the pop-up window.",
+                "console_opened_email_preview": "Opened email preview for: {encodedPath}",
+                "console_spam_action_confirmed": "SPAM action confirmed.",
+                "console_error_determine_action_after_spam": "Error: Could not determine which email to view/download after SPAM confirmation.",
+                "console_attempting_download_email": "Attempting to download email: {encodedPath}, isSpam: {isSpam}",
+                "console_initiating_download": "Initiating download for: {originalFilename} from {encodedPath}",
+                "console_invalid_bytes_value": "Invalid bytes value for formatting: {bytes}",
+                "console_invalid_input_escape_html": "Invalid input for escapeHTML: {str}. Returning empty string.",
+                "console_window_loaded_initiating": "Window loaded. Initiating email loading process.",
+                "console_spam_download_confirmed": "User confirmed SPAM download in preview. Initiating download.",
+                "console_spam_download_cancelled": "User cancelled SPAM download in preview.",
+                "console_fetching_settings": "Attempting to fetch language settings from /get-settings",
+                "console_settings_fetch_success": "Successfully fetched language settings. Current language set to: {lang}",
+                "console_settings_fetch_error": "Failed to fetch language settings. Defaulting to 'en'. Error: {error}",
+                "console_saving_language_setting": "Saving language setting to server: {lang}",
+                "console_language_saved_success": "Language setting saved successfully.",
+                "console_language_save_failed": "Failed to save language setting: {error}"
+            },
+            "es": {
+                "language_select_label": "Idioma:",
+                "apply_language_btn": "Aplicar",
+                "title": "Explorador de Correos Electrónicos Respaldados",
+                "filter_subject_label": "Asunto:",
+                "filter_subject_placeholder": "Ej: Aviso de Cuenta",
+                "filter_sender_label": "Remitente:",
+                "filter_sender_placeholder": "Ej: Google o Gmail",
+                "filter_recipient_label": "Buzón:",
+                "filter_recipient_all": "Todos",
+                "filter_date_label": "Fecha de Recepción:",
+                "apply_filter_btn": "Aplicar Filtro",
+                "pagination_prev": "Anterior",
+                "pagination_next": "Siguiente",
+                "pagination_page": "Página",
+                "pagination_of": "de",
+                "pagination_emails_per_page": "Correos por página:",
+                "loading_emails": "Cargando Correos...",
+                "processing_data": "Procesando datos recibidos...",
+                "error_loading_emails": "Error al cargar correos.",
+                "no_emails_found_filters": "No se encontraron correos que coincidan con los filtros.",
+                "table_header_datetime": "Fecha y Hora",
+                "table_header_subject": "Asunto",
+                "table_header_sender": "Remitente",
+                "table_header_recipient": "Buzón",
+                "table_header_size": "Tamaño",
+                "table_header_actions": "Acciones",
+                "action_view": "Ver",
+                "action_download": "Descargar",
+                "modal_security_alert": "Alerta de Seguridad.",
+                "modal_spam_marked": "Este Correo Electrónico está marcado como SPAM.",
+                "modal_spam_score": "Puntuación de Spam:",
+                "modal_malicious_warning": "Abrirlo podría exponer su dispositivo a software malicioso o revelar información personal.",
+                "modal_download_malicious_warning": "Descargarlo podría exponer su dispositivo a software malicioso o revelar información personal.",
+                "modal_continue_risk": "¿Desea continuar bajo su propio riesgo?",
+                "modal_view_anyway": "Ver de todos modos",
+                "modal_download_anyway": "Descargar de todos modos",
+                "modal_cancel": "Cancelar",
+                "error_invalid_file_path": "Error: No se puede abrir la vista previa porque la ruta del archivo no es válida. Verifique los metadatos del correo electrónico.",
+                "error_popup_blocked": "No se pudo abrir la vista previa del correo electrónico. Su navegador podría haber bloqueado la ventana emergente. Verifique la configuración de su bloqueador de ventanas emergentes.",
+                "error_determine_email_action": "Error: No se pudo determinar qué correo electrónico ver/descargar. Inténtelo de nuevo.",
+                "unknown_date": "Fecha desconocida",
+                "unknown_time": "Hora desconocida",
+                "unknown_size": "Tamaño desconocido",
+                "preview_simplified_message": "Esta es una representación simplificada del Correo Electrónico. Para visualizar el contenido completo con su formato original, por favor descargue el archivo.",
+                "preview_download_button": "Descargar Correo Electrónico",
+                "preview_spam_warning": "¡Advertencia!<br>Este correo ha sido identificado como SPAM.<br>Se recomienda precaución al interactuar con su contenido, ya que podría comprometer su información personal.",
+                "preview_date_time": "Fecha y Hora:",
+                "preview_from": "De:",
+                "preview_to": "Para:",
+                "preview_cc": "CC:",
+                "preview_subject": "Asunto:",
+                "preview_account": "Cuenta:",
+                "preview_no_content": "No se encontró contenido visualizable en este Correo Electrónico.",
+                "console_displaying_loading": "Mostrando indicador de carga: {message}",
+                "console_hiding_loading": "Ocultando indicador de carga.",
+                "console_updating_loading": "Actualizando mensaje de carga a: {message}",
+                "console_fetching_metadata": "Intentando obtener metadatos de correo electrónico de /list-eml",
+                "console_http_error_fetching": "Error HTTP al obtener correos: {status} - {statusText}",
+                "console_loaded_emails_success": "Se cargaron {count} correos electrónicos exitosamente.",
+                "console_failed_load_emails": "Fallo al cargar correos:",
+                "console_populating_recipient_filter": "Rellenando opciones de filtro de destinatarios.",
+                "console_added_recipients": "Se agregaron {count} destinatarios únicos al filtro.",
+                "console_applying_filters": "Aplicando filtros a la lista de correos.",
+                "console_filters_applied": "Filtros aplicados. Se encontraron {count} correos electrónicos coincidentes.",
+                "console_apply_filter_clicked": "Botón 'Aplicar Filtro' clickeado.",
+                "console_displaying_email_page": "Mostrando página de correo electrónico...",
+                "console_no_emails_for_display": "No se encontraron correos electrónicos que coincidan con los filtros actuales para mostrar.",
+                "console_displaying_emails_from_index": "Mostrando correos electrónicos del índice {startIndex} al {endIndex} en la página {currentPage}.",
+                "console_pagination_updated": "Controles de paginación actualizados. Página actual: {currentPage}, Páginas totales: {totalPages}.",
+                "console_changing_page_by_direction": "Cambiando página por dirección: {direction}",
+                "console_invalid_page_navigation": "Se intentó navegar a una página no válida: {newPage}. La página actual sigue siendo {currentPage}.",
+                "console_page_input_changed": "Entrada de página cambiada.",
+                "console_invalid_page_input": "Entrada de página no válida: {value}. Estableciendo a página 1.",
+                "console_page_exceeds_total": "La entrada de página {newPage} excede el total de páginas {totalPages}. Estableciendo a la última página.",
+                "console_navigating_to_page": "Navegando a la página: {newPage}",
+                "console_page_input_is_current": "La entrada de página {newPage} es la página actual. Sin cambios.",
+                "console_updating_emails_per_page": "Actualizando correos por página...",
+                "console_changing_emails_per_page": "Cambiando correos por página a: {newItemsPerPage}",
+                "console_attempting_view_email": "Intentando ver correo electrónico: {encodedPath}, esSpam: {isSpam}",
+                "console_displaying_spam_warning": "Mostrando modal de advertencia de SPAM.",
+                "console_hiding_spam_warning": "Ocultando modal de advertencia de SPAM.",
+                "console_error_invalid_file_path_preview": "Error: No se puede abrir la vista previa porque la ruta del archivo no es válida.",
+                "console_popup_blocked_preview": "No se pudo abrir la vista previa del correo electrónico. Su navegador podría haber bloqueado la ventana emergente.",
+                "console_opened_email_preview": "Vista previa de correo electrónico abierta para: {encodedPath}",
+                "console_spam_action_confirmed": "Acción de SPAM confirmada.",
+                "console_error_determine_action_after_spam": "Error: No se pudo determinar qué correo electrónico ver/descargar después de la confirmación de SPAM.",
+                "console_attempting_download_email": "Intentando descargar correo electrónico: {encodedPath}, esSpam: {isSpam}",
+                "console_initiating_download": "Iniciando descarga para: {originalFilename} desde {encodedPath}",
+                "console_invalid_bytes_value": "Valor de bytes no válido para formatear: {bytes}",
+                "console_invalid_input_escape_html": "Entrada no válida para escapeHTML: {str}. Devolviendo cadena vacía.",
+                "console_window_loaded_initiating": "Ventana cargada. Iniciando proceso de carga de correos electrónicos.",
+                "console_spam_download_confirmed": "Usuario confirmó descarga de SPAM en vista previa. Iniciando descarga.",
+                "console_spam_download_cancelled": "Usuario canceló descarga de SPAM en vista previa.",
+                "console_fetching_settings": "Intentando obtener la configuración de idioma de /get-settings",
+                "console_settings_fetch_success": "Configuración de idioma obtenida exitosamente. Idioma actual establecido en: {lang}",
+                "console_settings_fetch_error": "Fallo al obtener la configuración de idioma. Predeterminado a 'en'. Error: {error}",
+                "console_saving_language_setting": "Guardando configuración de idioma en el servidor: {lang}",
+                "console_language_saved_success": "Configuración de idioma guardada exitosamente.",
+                "console_language_save_failed": "Fallo al guardar la configuración de idioma: {error}"
+            }
+        };
+
+        /**
+         * Retrieves a translated string based on the current language.
+         * @param {string} key - The key for the desired string in the TRANSLATIONS object.
+         * @param {Object} [params={}] - Optional parameters to format the string.
+         * @returns {string} The translated string, or a fallback message if not found.
+         */
+        function getTranslatedString(key, params = {}) {
+            const langStrings = TRANSLATIONS[currentLanguage] || TRANSLATIONS["en"];
+            let text = langStrings[key] || TRANSLATIONS["en"][key] || `MISSING_TRANSLATION_KEY_${key}`;
+
+            // Replace placeholders like {count}
+            for (const paramKey in params) {
+                if (params.hasOwnProperty(paramKey)) {
+                    text = text.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), params[paramKey]);
+                }
+            }
+            return text;
+        }
+
+        // Global variables to store email data and pagination state
+        let allEmails = []; // Stores all email metadata loaded from the server
+        let filteredEmails = []; // Stores emails after applying filters
+        let currentPage = 1; // Current page number being displayed
+        // Number of emails to display per page, initialized from the first selector
         let emailsPerPage = parseInt(document.querySelectorAll('.pagination #itemsPerPage')[0].value);
 
+        // DOM element references for easier access
+        const mainTitle = document.getElementById('mainTitle');
+        const labelFilterSubject = document.getElementById('labelFilterSubject');
+        const filterSubjectInput = document.getElementById('filterSubject'); 
+        const labelFilterSender = document.getElementById('labelFilterSender');
+        const senderInput = document.getElementById('filterSender'); 
+        const labelFilterRecipient = document.getElementById('labelFilterRecipient');
+        const recipientFilterSelect = document.getElementById('filterRecipient'); 
+        const filterRecipientAll = document.getElementById('filterRecipientAll');
+        const labelFilterDate = document.getElementById('labelFilterDate');
+        const dateInput = document.getElementById('filterDate'); 
+        const applyFilterButton = document.getElementById('applyFilterBtn'); 
 
-        // --- Referencias a Elementos del DOM ---
-        // Cuerpo de la tabla donde se listan los correos.
+        const prevPageBtns = [document.getElementById('prevPageBtn'), document.getElementById('prevPageBtn2')];
+        const nextPageBtns = [document.getElementById('nextPageBtn'), document.getElementById('nextPageBtn2')];
+        const currentPageInputs = [document.getElementById('currentPageInput'), document.getElementById('currentPageInput2')]; 
+        const totalPagesSpans = [document.getElementById('totalPagesSpan'), document.getElementById('totalPagesSpan2')]; 
+        const itemsPerPageSelects = [document.getElementById('itemsPerPage'), document.getElementById('itemsPerPage2')];
+        const paginationPageSpans = [document.getElementById('paginationPageSpan'), document.getElementById('paginationPageSpan2')];
+        const labelItemsPerPageSpans = [document.getElementById('labelItemsPerPage'), document.getElementById('labelItemsPerPage2')];
+
         const emailListBody = document.getElementById('email-list-body');
-        // Input para la página actual.
-        // NOTA: Se usa querySelectorAll y se toma el primer elemento ya que hay dos inputs con el mismo ID.
-        const currentPageInputs = document.querySelectorAll('.pagination #currentPageInput'); 
-        // Span para el total de páginas.
-        // NOTA: Se usa querySelectorAll y se toma el primer elemento ya que hay dos spans con el mismo ID.
-        const totalPagesSpans = document.querySelectorAll('.pagination #totalPagesSpan'); 
-        // Botones para ir a la página anterior.
-        const prevPageBtns = document.querySelectorAll('.pagination #prevPageBtn');
-        // Botones para ir a la página siguiente.
-        const nextPageBtns = document.querySelectorAll('.pagination #nextPageBtn');
-        // Selectores para cambiar la cantidad de correos por página.
-        const itemsPerPageSelects = document.querySelectorAll('.pagination #itemsPerPage');
-
-        // Elemento del indicador de carga.
         const loadingElement = document.getElementById('loading');
-        // Párrafo dentro del indicador de carga para mostrar mensajes.
         const loadingMessageElement = document.getElementById('loadingMessage');
 
-        // Campos de entrada y selector para filtrar.
-        const filterSubjectInput = document.getElementById('filterSubject'); // Campo de texto para filtrar por asunto.
-        const recipientFilterSelect = document.getElementById('filterRecipient'); // Selector para filtrar por destinatario (buzón POP3).
-        const senderInput = document.getElementById('filterSender'); // Campo de texto para filtrar por remitente.
-        const dateInput = document.getElementById('filterDate'); // Campo de entrada de fecha para filtrar por fecha.
-        const applyFilterButton = document.getElementById('applyFilterBtn'); // Botón para aplicar los filtros.
+        const tableHeaderDateTime = document.getElementById('tableHeaderDateTime');
+        const tableHeaderSubject = document.getElementById('tableHeaderSubject');
+        const tableHeaderSender = document.getElementById('tableHeaderSender');
+        const tableHeaderRecipient = document.getElementById('tableHeaderRecipient');
+        const tableHeaderSize = document.getElementById('tableHeaderSize');
+        const tableHeaderActions = document.getElementById('tableHeaderActions');
 
-        // Elementos del Modal de Advertencia de SPAM
-        const spamModalOverlay = document.getElementById('spamModalOverlay'); // El fondo oscuro del modal.
-        const spamModalMessage = document.getElementById('spamModalMessage'); // El párrafo donde se muestra el mensaje.
-        const viewSpamButton = document.getElementById('viewSpamButton'); // Botón "Ver de todos modos".
-        const cancelViewButton = document.getElementById('cancelViewButton'); // Botón "Cancelar".
+        // SPAM Warning Modal elements
+        const spamModalOverlay = document.getElementById('spamModalOverlay'); 
+        const spamModalMessage = document.getElementById('spamModalMessage'); 
+        const viewSpamButton = document.getElementById('viewSpamButton'); 
+        const cancelViewButton = document.getElementById('cancelViewButton'); 
 
-        // Variables para gestionar la acción pendiente del modal de SPAM.
-        let currentSpamActionType = null; // Almacena el tipo de acción SPAM: 'view' o 'download'.
-        let currentSpamActionArgs = null; // Almacena los argumentos para la acción SPAM (e.g., path, filename).
+        // Language selector elements
+        const languageSelect = document.getElementById('languageSelect');
+        const labelLanguageSelect = document.getElementById('labelLanguageSelect');
+        const applyLanguageBtn = document.getElementById('applyLanguageBtn');
 
-        // --- Event Listeners ---
-        // Asocia la función changePage a los clics en los botones de paginación "Anterior".
+        // Variables to manage the pending action from the SPAM modal
+        let currentSpamActionType = null; // Stores the SPAM action type: 'view' or 'download'
+        let currentSpamActionArgs = null; // Stores arguments for the SPAM action (e.g., path, filename)
+
+        /**
+         * Updates all static text content in the HTML based on the current language.
+         */
+        function updateUIStrings() {
+            document.documentElement.lang = currentLanguage;
+            
+            // Language selector
+            labelLanguageSelect.textContent = getTranslatedString('language_select_label');
+            applyLanguageBtn.textContent = getTranslatedString('apply_language_btn');
+            languageSelect.value = currentLanguage; // Set the dropdown to the current language
+
+            mainTitle.textContent = getTranslatedString('title');
+            labelFilterSubject.textContent = getTranslatedString('filter_subject_label');
+            filterSubjectInput.placeholder = getTranslatedString('filter_subject_placeholder');
+            labelFilterSender.textContent = getTranslatedString('filter_sender_label');
+            senderInput.placeholder = getTranslatedString('filter_sender_placeholder');
+            labelFilterRecipient.textContent = getTranslatedString('filter_recipient_label');
+            filterRecipientAll.textContent = getTranslatedString('filter_recipient_all');
+            labelFilterDate.textContent = getTranslatedString('filter_date_label');
+            applyFilterButton.textContent = getTranslatedString('apply_filter_btn');
+
+            prevPageBtns.forEach(btn => btn.textContent = getTranslatedString('pagination_prev'));
+            nextPageBtns.forEach(btn => btn.textContent = getTranslatedString('pagination_next'));
+            paginationPageSpans.forEach(span => span.textContent = getTranslatedString('pagination_page'));
+            labelItemsPerPageSpans.forEach(span => span.textContent = getTranslatedString('pagination_emails_per_page'));
+
+            tableHeaderDateTime.textContent = getTranslatedString('table_header_datetime');
+            tableHeaderSubject.textContent = getTranslatedString('table_header_subject');
+            tableHeaderSender.textContent = getTranslatedString('table_header_sender');
+            tableHeaderRecipient.textContent = getTranslatedString('table_header_recipient');
+            tableHeaderSize.textContent = getTranslatedString('table_header_size');
+            tableHeaderActions.textContent = getTranslatedString('table_header_actions');
+
+            viewSpamButton.textContent = getTranslatedString('modal_view_anyway');
+            cancelViewButton.textContent = getTranslatedString('modal_cancel');
+        }
+
+        // Event Listeners for pagination and filter controls
         prevPageBtns.forEach(btn => {
             btn.addEventListener('click', () => changePage(-1));
         });
-        // Asocia la función changePage a los clics en los botones de paginación "Siguiente".
         nextPageBtns.forEach(btn => {
             btn.addEventListener('click', () => changePage(1));
         });
 
-        // Asocia la función changeItemsPerPage a los cambios en los selectores de elementos por página.
         itemsPerPageSelects.forEach(select => {
             select.addEventListener('change', changeItemsPerPage);
         });
 
-        // NUEVO: Asocia la función goToPageFromInput al cambio en el input de número de página.
         currentPageInputs.forEach(input => {
             input.addEventListener('change', goToPageFromInput);
         });
 
-
-        // Asocia la función handleApplyFilters al clic en el botón "Aplicar Filtro".
         if (applyFilterButton) {
             applyFilterButton.addEventListener('click', handleApplyFilters);
-        } else {
-            console.error("[ERROR_FRONTEND] El botón 'Aplicar Filtro' (ID: applyFilterBtn) no se encontró en el DOM. La funcionalidad de filtro no estará disponible.");
         }
 
-        // Event Listeners para los botones del modal de SPAM
+        // Event Listeners for SPAM modal buttons
         if (viewSpamButton) {
             viewSpamButton.addEventListener('click', handleSpamActionConfirm);
         }
@@ -631,126 +907,121 @@
             cancelViewButton.addEventListener('click', hideSpamWarningModal);
         }
 
-        // --- Funciones de Utilidad para el Mensaje de Carga ---
+        // Event listener for language selection
+        if (applyLanguageBtn) {
+            applyLanguageBtn.addEventListener('click', async () => {
+                const selectedLang = languageSelect.value;
+                if (selectedLang !== currentLanguage) {
+                    await saveLanguageSetting(selectedLang);
+                    currentLanguage = selectedLang; // Update global language after successful save
+                    updateUIStrings(); // Re-render UI with new language
+                    displayCurrentPageEmails(); // Re-render email table with new button texts
+                }
+            });
+        }
 
         /**
-         * Muestra el indicador de carga en la parte inferior derecha de la pantalla.
-         * @param {string} message - El mensaje a mostrar en el indicador de carga.
+         * Displays the loading indicator at the bottom right of the screen.
+         * @param {string} message - The message to display in the loading indicator.
          */
-        function showLoading(message = 'Cargando...') {
+        function showLoading(message = getTranslatedString('loading_emails')) {
+            console.log(getTranslatedString('console_displaying_loading', { message: message }));
             loadingMessageElement.textContent = message;
             loadingElement.style.display = 'flex';
-            console.debug(`[DEBUG_FRONTEND] Indicador de carga mostrado con mensaje: "${message}".`);
         }
 
         /**
-         * Oculta el indicador de carga.
+         * Hides the loading indicator.
          */
         function hideLoading() {
+            console.log(getTranslatedString('console_hiding_loading'));
             loadingElement.style.display = 'none';
-            console.debug('[DEBUG_FRONTEND] Indicador de carga oculto.');
         }
 
         /**
-         * Actualiza el texto del mensaje dentro del indicador de carga.
-         * @param {string} message - El nuevo mensaje a mostrar.
+         * Updates the message text within the loading indicator.
+         * @param {string} message - The new message to display.
          */
         function updateLoadingMessage(message) {
+            console.log(getTranslatedString('console_updating_loading', { message: message }));
             loadingMessageElement.textContent = message;
-            console.debug(`[DEBUG_FRONTEND] Mensaje de carga actualizado a: "${message}".`);
         }
 
-
-        // --- Carga y Procesamiento de Datos ---
-
         /**
-         * Carga asíncronamente todos los metadatos de correos desde el servidor.
-         * Esta es la función principal que se ejecuta al cargar la página.
+         * Asynchronously loads all email metadata from the server.
+         * This is the main function executed when the page loads.
          */
         async function loadAllEmailsForFiltering() {
-            showLoading('Cargando Correos Electrónicos...');
+            showLoading(getTranslatedString('loading_emails'));
+            console.log(getTranslatedString('console_fetching_metadata'));
             try {
-                // Realiza una petición GET al endpoint /list-eml para obtener los metadatos de los correos.
                 const response = await fetch('/list-eml');
                 if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status} - ${response.statusText}`);
+                    console.error(getTranslatedString('console_http_error_fetching', { status: response.status, statusText: response.statusText }));
+                    throw new Error(`HTTP error: ${response.status} - ${response.statusText}`);
                 }
-                updateLoadingMessage('Procesando datos recibidos...');
+                updateLoadingMessage(getTranslatedString('processing_data'));
                 const data = await response.json();
                 allEmails = data.emails || [];
+                console.log(getTranslatedString('console_loaded_emails_success', { count: allEmails.length }));
 
-                console.info(`[INFO_FRONTEND] ${allEmails.length} metadatos de correos cargados exitosamente del servidor.`);
-
-                // Llena el selector de destinatarios (buzones POP3) con los destinatarios únicos encontrados.
                 populateRecipientFilter(allEmails);
-
-                // Aplica los filtros iniciales (muestra todos por defecto) y carga la primera página.
                 handleApplyFilters();
 
             } catch (error) {
-                console.error('[ERROR_FRONTEND] Fallo crítico al cargar los metadatos de correos desde el servidor:', error);
-                emailListBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No se pudieron cargar los Correos Electrónicos. Por favor, verifica la consola del navegador para más detalles.</td></tr>`;
+                console.error(getTranslatedString('console_failed_load_emails'), error);
+                emailListBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">${getTranslatedString('error_loading_emails')}</td></tr>`;
                 allEmails = [];
                 filteredEmails = [];
                 updatePaginationControls();
-                updateLoadingMessage('Error al cargar correos.');
+                updateLoadingMessage(getTranslatedString('error_loading_emails'));
                 hideLoading();
             }
         }
 
         /**
-         * Llena el selector de destinatarios (buzones POP3) con opciones únicas basadas en los correos cargados.
-         * Esto permite al usuario filtrar correos por el buzón POP3 al que llegaron.
-         * @param {Array<Object>} emails - La lista de objetos de correo cargados.
+         * Populates the recipient (POP3 mailbox) filter select with unique options based on loaded emails.
+         * This allows users to filter emails by the POP3 mailbox they arrived in.
+         * @param {Array<Object>} emails - The list of loaded email objects.
          */
         function populateRecipientFilter(emails) {
-            // Extrae todos los destinatarios (buzones POP3), elimina duplicados y filtra valores nulos o vacíos.
+            console.log(getTranslatedString('console_populating_recipient_filter'));
             const recipients = [...new Set(emails.map(email => email.recipient).filter(Boolean))];
-            recipients.sort(); // Ordena alfabéticamente para una mejor usabilidad.
+            recipients.sort(); 
 
-            // Limpia las opciones actuales del selector, manteniendo solo la opción predeterminada "Todos".
-            recipientFilterSelect.innerHTML = '<option value="">Todos</option>';
+            recipientFilterSelect.innerHTML = `<option value="">${getTranslatedString('filter_recipient_all')}</option>`;
 
-            // Añade una nueva opción al selector por cada destinatario único encontrado.
             recipients.forEach(recipient => {
                 const option = document.createElement('option');
                 option.value = recipient;
                 option.textContent = recipient;
                 recipientFilterSelect.appendChild(option);
             });
-            console.info(`[INFO_FRONTEND] Selector de buzones poblado con ${recipients.length} buzones únicos.`);
+            console.log(getTranslatedString('console_added_recipients', { count: recipients.length }));
         }
 
-
-        // --- Lógica de Filtrado y Paginación ---
-
         /**
-         * Aplica los filtros de búsqueda (asunto, remitente, destinatario, fecha) a todos los correos cargados.
-         * Actualiza la lista 'filteredEmails' con los resultados y reinicia la paginación a la primera página.
+         * Applies search filters (subject, sender, recipient, date) to all loaded emails.
+         * Updates the 'filteredEmails' list with the results and resets pagination to the first page.
          */
         function applyFilters() {
-             showLoading('Aplicando filtros...');
-            // Obtiene los valores de los campos de filtro y los convierte a minúsculas para una búsqueda insensible a mayúsculas/minúsculas.
+             showLoading(getTranslatedString('apply_filter_btn'));
+            console.log(getTranslatedString('console_applying_filters'));
             const subjectTerm = filterSubjectInput.value.toLowerCase();
             const senderTerm = senderInput.value.toLowerCase();
-            const selectedRecipient = recipientFilterSelect.value; // Obtiene el destinatario (buzón POP3) seleccionado.
-            const selectedDate = dateInput.value; // Obtiene la fecha seleccionada en formato interminable-MM-DD.
+            const selectedRecipient = recipientFilterSelect.value; 
+            const selectedDate = dateInput.value; 
 
-            // Filtra la lista completa de correos ('allEmails') basándose en los criterios de búsqueda.
             filteredEmails = allEmails.filter(email => {
                 const matchesSubject = subjectTerm === '' || (email.subject && email.subject.toLowerCase().includes(subjectTerm));
                 const matchesSender = senderTerm === '' || (email.sender && email.sender.toLowerCase().includes(senderTerm));
                 const matchesRecipient = selectedRecipient === '' || (email.recipient && email.recipient === selectedRecipient);
-                // Asume que email.date está en formato DD-MM-AAAA y lo convierte a interminable-MM-DD para comparación.
                 const matchesDate = selectedDate === '' || (email.date && email.date.split('-').reverse().join('-') === selectedDate);
 
-                // Un correo se incluye en los resultados filtrados si cumple con TODOS los criterios de filtro.
                 return matchesSubject && matchesSender && matchesRecipient && matchesDate;
             });
 
-            // Ordena la lista filtrada por fecha y hora en orden descendente (los correos más recientes primero).
              filteredEmails.sort((a, b) => {
-                 // Construye una cadena comparable en formato AAAAMMDDHHmm a partir de DD-MM-AAAA y HH-mm.
                  const dateA = (a.date && a.time) ? `${a.date.split('-')[2]}${a.date.split('-')[1]}${a.date.split('-')[0]}${a.time.replace('-', '')}` : '0';
                  const dateB = (b.date && b.time) ? `${b.date.split('-')[2]}${b.date.split('-')[1]}${b.date.split('-')[0]}${b.time.replace('-', '')}` : '0';
 
@@ -759,254 +1030,228 @@
                  return 0;
              });
 
-            console.info(`[INFO_FRONTEND] Filtros aplicados. ${filteredEmails.length} correos coinciden con los criterios.`);
-
-            currentPage = 1; // Reinicia la paginación a la primera página después de aplicar nuevos filtros.
-            displayCurrentPageEmails(); // Muestra los correos de la primera página.
-            window.scrollTo(0, 0); // Desplázate al inicio de la página para que el usuario vea la primera página de resultados.
+            currentPage = 1; 
+            console.log(getTranslatedString('console_filters_applied', { count: filteredEmails.length }));
+            displayCurrentPageEmails(); 
+            window.scrollTo(0, 0); 
             hideLoading();
         }
 
         /**
-         * Maneja el evento de clic en el botón "Aplicar Filtro".
-         * Esta función inicia el proceso de filtrado y actualización de la tabla.
+         * Handles the "Apply Filter" button click event.
+         * This function initiates the filtering and table update process.
          */
          function handleApplyFilters() {
-             console.debug('[DEBUG_FRONTEND] Botón "Aplicar Filtro" clickeado. Iniciando proceso de filtrado.');
+             console.log(getTranslatedString('console_apply_filter_clicked'));
              applyFilters();
          }
 
-
         /**
-         * Muestra los correos correspondientes a la página actual en la tabla HTML.
-         * Calcula qué correos mostrar basándose en 'currentPage' y 'emailsPerPage'.
+         * Displays the emails for the current page in the HTML table.
+         * Calculates which emails to show based on 'currentPage' and 'emailsPerPage'.
          */
         function displayCurrentPageEmails() {
-             showLoading('Mostrando página de correos...');
-            // Calcula los índices de inicio y fin para obtener el subconjunto de correos de la página actual.
+             showLoading(getTranslatedString('console_displaying_email_page'));
             const startIndex = (currentPage - 1) * emailsPerPage;
             const endIndex = startIndex + emailsPerPage;
             const emailsToDisplay = filteredEmails.slice(startIndex, endIndex);
 
-            // Limpia el contenido actual del cuerpo de la tabla.
             emailListBody.innerHTML = '';
 
             if (emailsToDisplay.length === 0) {
+                console.log(getTranslatedString('console_no_emails_for_display'));
                 const noResultsRow = document.createElement('tr');
                 const cell = document.createElement('td');
-                cell.colSpan = 6; /* Mantiene colspan en 6 para la tabla principal */
-                cell.textContent = 'No se encontraron correos electrónicos que coincidan con los filtros.';
+                cell.colSpan = 6; 
+                cell.textContent = getTranslatedString('no_emails_found_filters');
                 cell.style.textAlign = 'center';
                 noResultsRow.appendChild(cell);
                 emailListBody.appendChild(noResultsRow);
-                console.info('[INFO_FRONTEND] No hay correos para mostrar en la página actual o no coinciden con los filtros.');
             } else {
-                // Itera sobre los correos a mostrar y crea una fila de tabla para cada uno.
+                console.log(getTranslatedString('console_displaying_emails_from_index', { startIndex: startIndex, endIndex: endIndex - 1, currentPage: currentPage }));
                 emailsToDisplay.forEach(email => {
                     const row = document.createElement('tr');
-
-                    // Utiliza el campo 'is_spam' determinado por el servidor.
                     const determinedIsSpam = email.is_spam === true; 
-
-                    // Argumentos para las funciones de visualización/descarga, para el mensaje del modal.
                     const spamScoreForModal = email.spam_score;
                     const spamFilterWhitelistStatus = email.spam_filter_whitelist ? email.spam_filter_whitelist.toLowerCase() : 'no';
 
-                    // Añade la clase 'is-spam' a la fila si el correo es spam según el servidor.
                     if (determinedIsSpam) {
                         row.classList.add('is-spam');
                     }
-                    const encodedPath = encodeURIComponent(email.path); // Codifica la ruta para URL.
+                    const encodedPath = encodeURIComponent(email.path); 
 
                     row.innerHTML = `
-                        <td data-label="Fecha y Hora:" class="datetime-cell">${formatDate(email.date)} ${formatTime(email.time)}</td>
-                        <td data-label="Asunto:" class="subject-cell" title="${escapeHTML(email.subject)}">${escapeHTML(email.subject)}</td>
-                        <td data-label="Remitente:" class="sender-cell" title="${escapeHTML(email.sender)}">${escapeHTML(email.sender)}</td>
-                        <td data-label="Destinatario:" class="recipient-cell" title="${escapeHTML(email.recipient)}">${escapeHTML(email.recipient)}</td>
-                        <td data-label="Tamaño:" class="size-cell">${formatBytes(email.tamano_eml)}</td>
-                        <td data-label="Acciones:" class="actions-cell">
-                            <button class="view-button" onclick="viewEmail('${encodedPath}', ${determinedIsSpam}, ${spamScoreForModal === null || spamScoreForModal === undefined ? 'null' : spamScoreForModal}, '${spamFilterWhitelistStatus}')">Ver</button>
-                            <button class="download-button" onclick="downloadEmail('${encodedPath}', '${escapeHTML(email.name)}', ${determinedIsSpam}, ${spamScoreForModal === null || spamScoreForModal === undefined ? 'null' : spamScoreForModal}, '${spamFilterWhitelistStatus}')">Descargar</button>
+                        <td data-label="${getTranslatedString('table_header_datetime')}:" class="datetime-cell">${formatDate(email.date)} ${formatTime(email.time)}</td>
+                        <td data-label="${getTranslatedString('table_header_subject')}:" class="subject-cell" title="${escapeHTML(email.subject)}">${escapeHTML(email.subject)}</td>
+                        <td data-label="${getTranslatedString('table_header_sender')}:" class="sender-cell" title="${escapeHTML(email.sender)}">${escapeHTML(email.sender)}</td>
+                        <td data-label="${getTranslatedString('table_header_recipient')}:" class="recipient-cell" title="${escapeHTML(email.recipient)}">${escapeHTML(email.recipient)}</td>
+                        <td data-label="${getTranslatedString('table_header_size')}:" class="size-cell">${formatBytes(email.tamano_eml)}</td>
+                        <td data-label="${getTranslatedString('table_header_actions')}:" class="actions-cell">
+                            <button class="view-button" onclick="viewEmail('${encodedPath}', ${determinedIsSpam}, ${spamScoreForModal === null || spamScoreForModal === undefined ? 'null' : spamScoreForModal}, '${spamFilterWhitelistStatus}')">${getTranslatedString('action_view')}</button>
+                            <button class="download-button" onclick="downloadEmail('${encodedPath}', '${escapeHTML(email.name)}', ${determinedIsSpam}, ${spamScoreForModal === null || spamScoreForModal === undefined ? 'null' : spamScoreForModal}, '${spamFilterWhitelistStatus}')">${getTranslatedString('action_download')}</button>
                         </td>
                     `;
                     emailListBody.appendChild(row);
                 });
-                console.info(`[INFO_FRONTEND] Mostrando ${emailsToDisplay.length} correos en la página ${currentPage}.`);
             }
 
-            updatePaginationControls(); // Actualiza el estado de los controles de paginación.
+            updatePaginationControls(); 
             hideLoading();
         }
 
         /**
-         * Actualiza el texto de información de la página y habilita/deshabilita los botones de paginación.
-         * Esto refleja la página actual y el número total de páginas disponibles.
+         * Updates the page information text and enables/disables pagination buttons.
+         * This reflects the current page and the total number of available pages.
          */
         function updatePaginationControls() {
             const totalPages = Math.ceil(filteredEmails.length / emailsPerPage);
             
-            // Actualiza el input de la página actual y el span del total de páginas para AMBOS bloques de paginación.
             currentPageInputs.forEach(input => {
                 input.value = currentPage;
-                input.max = totalPages > 0 ? totalPages : 1; // Establece el máximo para el input de página.
+                input.max = totalPages > 0 ? totalPages : 1; 
             });
             totalPagesSpans.forEach(span => {
-                span.textContent = `de ${totalPages || 1}`;
+                span.textContent = `${getTranslatedString('pagination_of')} ${totalPages || 1}`;
             });
 
-            // Habilita o deshabilita los botones "Anterior" para AMBOS bloques de paginación.
             prevPageBtns.forEach(btn => {
                 btn.disabled = currentPage === 1 || filteredEmails.length === 0;
             });
-            // Habilita o deshabilita los botones "Siguiente" para AMBOS bloques de paginación.
             nextPageBtns.forEach(btn => {
                 btn.disabled = currentPage >= totalPages || filteredEmails.length === 0;
             });
-            console.debug(`[DEBUG_FRONTEND] Controles de paginación actualizados. Página actual: ${currentPage}, Total de páginas: ${totalPages || 1}.`);
+            console.log(getTranslatedString('console_pagination_updated', { currentPage: currentPage, totalPages: totalPages }));
         }
 
         /**
-         * Cambia la página actual mostrada en la tabla.
-         * Se llama al hacer clic en los botones "Anterior" o "Siguiente".
-         * @param {number} direction - La dirección del cambio (-1 para ir a la página anterior, 1 para ir a la página siguiente).
+         * Changes the current page displayed in the table.
+         * Called when "Previous" or "Next" buttons are clicked.
+         * @param {number} direction - The direction of change (-1 for previous, 1 for next).
          */
         function changePage(direction) {
+            console.log(getTranslatedString('console_changing_page_by_direction', { direction: direction }));
             const totalPages = Math.ceil(filteredEmails.length / emailsPerPage);
             const newPage = currentPage + direction;
 
-            // Verifica si la nueva página propuesta está dentro del rango válido.
             if (newPage >= 1 && newPage <= totalPages) {
                 currentPage = newPage;
-                console.info(`[INFO_FRONTEND] Cambiando a la página ${currentPage}.`);
                 displayCurrentPageEmails();
-                window.scrollTo(0, 0); // Desplázate al inicio de la página.
+                window.scrollTo(0, 0); 
             } else {
-                console.debug(`[DEBUG_FRONTEND] Intento de cambiar a una página inválida: ${newPage}. Página actual: ${currentPage}, Total de páginas: ${totalPages || 1}.`);
+                console.warn(getTranslatedString('console_invalid_page_navigation', { newPage: newPage, currentPage: currentPage }));
             }
         }
 
         /**
-         * NUEVO: Maneja la entrada directa del número de página por parte del usuario.
-         * Valida la entrada y navega a la página si es válida.
+         * Handles direct page number input by the user.
+         * Validates the input and navigates to the page if valid.
          */
         function goToPageFromInput(event) {
-            let newPage = parseInt(event.target.value); // Obtiene el valor del input que disparó el evento.
+            console.log(getTranslatedString('console_page_input_changed'));
+            let newPage = parseInt(event.target.value); 
             const totalPages = Math.ceil(filteredEmails.length / emailsPerPage);
 
-            // Valida la entrada: si no es un número, o es menor que 1, establece a 1.
             if (isNaN(newPage) || newPage < 1) {
+                console.warn(getTranslatedString('console_invalid_page_input', { value: event.target.value }));
                 newPage = 1;
-                console.warn('[WARN_FRONTEND] Entrada de página inválida. Se ha ajustado a la página 1.');
             }
-            // Si la página excede el total de páginas (y hay correos), ajusta al total de páginas.
             if (newPage > totalPages && totalPages > 0) {
+                console.warn(getTranslatedString('console_page_exceeds_total', { newPage: newPage, totalPages: totalPages }));
                 newPage = totalPages;
-                console.warn(`[WARN_FRONTEND] La página solicitada excede el total de páginas. Se ha ajustado a la página ${totalPages}.`);
             }
-            // Si no hay correos, la página siempre es 1.
             if (filteredEmails.length === 0) {
                 newPage = 1;
             }
 
-            // Si la nueva página es diferente a la actual, actualiza y muestra.
             if (newPage !== currentPage) {
+                console.log(getTranslatedString('console_navigating_to_page', { newPage: newPage }));
                 currentPage = newPage;
-                console.info(`[INFO_FRONTEND] Navegando directamente a la página: ${currentPage}.`);
                 displayCurrentPageEmails();
                 window.scrollTo(0, 0);
             } else {
-                // Si el usuario escribe el número de página actual, simplemente asegura que el input refleje el valor correcto.
-                // Se actualizan todos los inputs de página para que estén sincronizados.
+                console.log(getTranslatedString('console_page_input_is_current', { newPage: newPage }));
                 currentPageInputs.forEach(input => {
                     input.value = currentPage;
                 });
-                console.debug('[DEBUG_FRONTEND] El usuario ingresó la página actual. No se requiere recarga.');
             }
         }
 
         /**
-         * Maneja el cambio en el número de elementos a mostrar por página seleccionado por el usuario.
-         * Se llama cuando el usuario selecciona un nuevo valor en el selector "Correos Electrónicos por página".
-         * @param {Event} event - El evento de cambio disparado por el selector.
+         * Handles the change in the number of items to display per page selected by the user.
+         * Called when the user selects a new value in the "Emails per page" selector.
+         * @param {Event} event - The change event triggered by the selector.
          */
         function changeItemsPerPage(event) {
-            showLoading('Actualizando número de correos por página...');
+            showLoading(getTranslatedString('console_updating_emails_per_page'));
             const newItemsPerPage = parseInt(event.target.value);
+            console.log(getTranslatedString('console_changing_emails_per_page', { newItemsPerPage: newItemsPerPage }));
             emailsPerPage = newItemsPerPage;
-            console.info(`[INFO_FRONTEND] Número de correos por página cambiado a: ${emailsPerPage}.`);
 
-            // Sincroniza el valor seleccionado en ambos selectores de paginación.
             itemsPerPageSelects.forEach(select => {
                 select.value = newItemsPerPage;
             });
 
-            currentPage = 1; // Siempre vuelve a la primera página.
+            currentPage = 1; 
             displayCurrentPageEmails();
             window.scrollTo(0, 0);
             hideLoading();
         }
 
-
-        // --- Funciones de Acción de Correo ---
-
         /**
-         * Inicia el proceso para abrir el contenido de un archivo .eml en una nueva pestaña.
-         * Si el correo está marcado como spam, muestra un modal de advertencia antes de proceder.
-         * @param {string} encodedPath - La ruta relativa del archivo .eml a visualizar, ya codificada con encodeURIComponent.
-         * @param {boolean} isSpam - Indica si el correo está marcado como spam (true) o no (false).
-         * @param {number|null} spamScore - La puntuación de spam del correo, o null si no está disponible.
-         * @param {string} spamFilterWhitelistStatus - Estado de la lista blanca de spam ('yes' o 'no').
+         * Initiates the process to open the content of an .eml file in a new tab.
+         * If the email is marked as spam, it shows a warning modal before proceeding.
+         * @param {string} encodedPath - The relative path of the .eml file to view, already URI encoded.
+         * @param {boolean} isSpam - Indicates if the email is marked as spam.
+         * @param {number|null} spamScore - The spam score of the email, or null if not available.
+         * @param {string} spamFilterWhitelistStatus - Spam whitelist status ('yes' or 'no').
          */
         function viewEmail(encodedPath, isSpam, spamScore, spamFilterWhitelistStatus) {
-            console.debug(`[DEBUG_FRONTEND] Intentando visualizar correo. Path: '${encodedPath}', SPAM: ${isSpam}, Score: ${spamScore}, Whitelist: '${spamFilterWhitelistStatus}'.`);
+            console.log(getTranslatedString('console_attempting_view_email', { encodedPath: encodedPath, isSpam: isSpam }));
             if (isSpam) {
                 currentSpamActionType = 'view';
                 currentSpamActionArgs = { path: encodedPath };
-                // Muestra el modal de advertencia con el mensaje y la puntuación de spam.
-                showSpamWarningModal('Alerta de Seguridad.<br>Este Correo Electrónico está marcado como SPAM.<br>' + 
-                                     (spamScore !== null && spamScore !== undefined ? 'Puntuación de Spam: ' + spamScore + '<br>' : '') +
-                                     'Abrirlo podría exponer su dispositivo a software malicioso o revelar información personal.<br>¿Desea continuar bajo su propio riesgo?');
+                showSpamWarningModal(`${getTranslatedString('modal_security_alert')}<br>${getTranslatedString('modal_spam_marked')}<br>` + 
+                                     (spamScore !== null && spamScore !== undefined ? `${getTranslatedString('modal_spam_score')} ${spamScore}<br>` : '') +
+                                     `${getTranslatedString('modal_malicious_warning')}<br>${getTranslatedString('modal_continue_risk')}`);
             } else {
                 openEmailPreview(encodedPath);
             }
         }
 
         /**
-         * Muestra el modal de advertencia de SPAM con el mensaje proporcionado.
-         * Configura el texto del botón de confirmación según la acción pendiente ('view' o 'download').
-         * @param {string} message - El mensaje HTML a mostrar dentro del modal.
+         * Displays the SPAM warning modal with the provided message.
+         * Sets the confirmation button text based on the pending action ('view' or 'download').
+         * @param {string} message - The HTML message to display within the modal.
          */
         function showSpamWarningModal(message) {
+            console.warn(getTranslatedString('console_displaying_spam_warning'));
             spamModalMessage.innerHTML = message;
             if (currentSpamActionType === 'download') {
-                viewSpamButton.textContent = 'Descargar de todos modos';
+                viewSpamButton.textContent = getTranslatedString('modal_download_anyway');
             } else {
-                viewSpamButton.textContent = 'Ver de todos modos';
+                viewSpamButton.textContent = getTranslatedString('modal_view_anyway');
             }
             spamModalOverlay.style.display = 'flex';
-            console.warn('[WARN_FRONTEND] Modal de advertencia de SPAM mostrado al usuario.');
         }
 
         /**
-         * Oculta el modal de advertencia de SPAM y reinicia las variables de acción pendiente.
+         * Hides the SPAM warning modal and resets pending action variables.
          */
         function hideSpamWarningModal() {
+            console.log(getTranslatedString('console_hiding_spam_warning'));
             spamModalOverlay.style.display = 'none';
             currentSpamActionType = null;
             currentSpamActionArgs = null;
-            console.debug('[DEBUG_FRONTEND] Modal de advertencia de SPAM oculto y estado reiniciado.');
         }
 
         /**
-         * Abre una nueva pestaña del navegador para mostrar la vista previa HTML de un archivo .eml.
-         * Se llama después de confirmar la acción (si el correo era spam) o directamente si no era spam.
-         * @param {string} encodedPath - La ruta relativa del archivo .eml a visualizar, ya codificada con encodeURIComponent.
+         * Opens a new browser tab to display the HTML preview of an .eml file.
+         * Called after confirming the action (if the email was spam) or directly if not spam.
+         * @param {string} encodedPath - The relative path of the .eml file to view, already URI encoded.
          */
         function openEmailPreview(encodedPath) {
-            console.debug(`[DEBUG_FRONTEND] Intentando abrir vista previa para la ruta codificada: '${encodedPath}'.`);
             if (!encodedPath || typeof encodedPath !== 'string' || encodedPath.trim() === "" || encodedPath === "undefined" || encodedPath === "null") {
-                console.error('[ERROR_FRONTEND] La ruta codificada proporcionada para la vista previa es inválida o está vacía.');
-                alert("Error: No se puede abrir la vista previa porque la ruta del archivo es inválida. Por favor, verifica los metadatos del Correo Electrónico.");
+                console.error(getTranslatedString('console_error_invalid_file_path_preview'));
                 return;
             }
 
@@ -1014,106 +1259,100 @@
             const newWindow = window.open(viewUrl, '_blank');
 
             if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-                console.warn('[WARN_FRONTEND] El navegador pudo haber bloqueado la apertura de la nueva ventana (pop-up) para la vista previa. URL intentada:', viewUrl);
-                alert('La vista previa del correo no se pudo abrir. Es posible que tu navegador haya bloqueado la ventana emergente. Por favor, revisa la configuración de tu bloqueador de pop-ups.');
+                console.warn(getTranslatedString('console_popup_blocked_preview'));
             } else {
-                console.info('[INFO_FRONTEND] Se intentó abrir una nueva ventana para la vista previa del correo.');
+                console.log(getTranslatedString('console_opened_email_preview', { encodedPath: encodedPath }));
             }
         }
 
         /**
-         * Maneja el clic en el botón de confirmación ("Ver de todos modos" o "Descargar de todos modos") del modal de SPAM.
-         * Ejecuta la acción pendiente (visualizar o descargar) si el usuario confirma.
+         * Handles the click on the confirmation button ("View Anyway" or "Download Anyway") of the SPAM modal.
+         * Executes the pending action (view or download) if the user confirms.
          */
         function handleSpamActionConfirm() {
-            console.debug(`[DEBUG_FRONTEND] Confirmación de acción SPAM. Tipo: '${currentSpamActionType}', Argumentos:`, currentSpamActionArgs);
+            console.log(getTranslatedString('console_spam_action_confirmed'));
             if (currentSpamActionType === 'view' && currentSpamActionArgs && currentSpamActionArgs.path) {
                 openEmailPreview(currentSpamActionArgs.path);
             } else if (currentSpamActionType === 'download' && currentSpamActionArgs && currentSpamActionArgs.path && currentSpamActionArgs.filename) {
                 performActualDownload(currentSpamActionArgs.path, currentSpamActionArgs.filename);
             } else {
-                console.error('[ERROR_FRONTEND] Tipo de acción o argumentos no válidos para la confirmación de SPAM.');
-                alert("Error: No se pudo determinar qué Correo Electrónico visualizar/descargar. Por favor, intenta de nuevo.");
+                console.error(getTranslatedString('console_error_determine_action_after_spam'));
             }
             hideSpamWarningModal();
         }
 
         /**
-         * Inicia el proceso para descargar un archivo .eml específico desde el servidor.
-         * Si el correo es spam, muestra un modal de advertencia antes de proceder con la descarga.
-         * @param {string} encodedPath - La ruta relativa del archivo .eml a descargar, ya codificada con encodeURIComponent.
-         * @param {string} originalFilename - El nombre original del archivo para la descarga.
-         * @param {boolean} isSpam - Indica si el correo está marcado como spam.
-         * @param {number|null} spamScore - La puntuación de spam del correo, o null si no está disponible.
-         * @param {string} spamFilterWhitelistStatus - Estado de la lista blanca de spam ('yes' o 'no').
+         * Initiates the process to download a specific .eml file from the server.
+         * If the email is spam, it shows a warning modal before proceeding with the download.
+         * @param {string} encodedPath - The relative path of the .eml file to download, already URI encoded.
+         * @param {string} originalFilename - The original filename for the download.
+         * @param {boolean} isSpam - Indicates if the email is marked as spam.
+         * @param {number|null} spamScore - The spam score of the email, or null if not available.
+         * @param {string} spamFilterWhitelistStatus - Spam whitelist status ('yes' or 'no').
          */
         function downloadEmail(encodedPath, originalFilename, isSpam, spamScore, spamFilterWhitelistStatus) {
-            console.debug(`[DEBUG_FRONTEND] Intentando descargar correo. Path: '${encodedPath}', Nombre: '${originalFilename}', SPAM: ${isSpam}, Score: ${spamScore}, Whitelist: '${spamFilterWhitelistStatus}'.`);
+            console.log(getTranslatedString('console_attempting_download_email', { encodedPath: encodedPath, isSpam: isSpam }));
             if (isSpam) {
                 currentSpamActionType = 'download';
                 currentSpamActionArgs = { path: encodedPath, filename: originalFilename };
-                // Muestra el modal de advertencia con el mensaje y la puntuación de spam.
-                showSpamWarningModal('Alerta de Seguridad.<br>Este Correo Electrónico está marcado como SPAM.<br>' + 
-                                     (spamScore !== null && spamScore !== undefined ? 'Puntuación de Spam: ' + spamScore + '<br>' : '') +
-                                     'Descargarlo podría exponer su dispositivo a software malicioso o revelar información personal.<br>¿Desea continuar bajo su propio riesgo?');
+                showSpamWarningModal(`${getTranslatedString('modal_security_alert')}<br>${getTranslatedString('modal_spam_marked')}<br>` + 
+                                     (spamScore !== null && spamScore !== undefined ? `${getTranslatedString('modal_spam_score')} ${spamScore}<br>` : '') +
+                                     `${getTranslatedString('modal_download_malicious_warning')}<br>${getTranslatedString('modal_continue_risk')}`);
             } else {
                 performActualDownload(encodedPath, originalFilename);
             }
         }
 
         /**
-         * Realiza la descarga efectiva del archivo .eml creando un enlace temporal y simulando un clic.
-         * Se llama después de confirmar la acción (si el correo era spam) o directamente si no era spam.
-         * @param {string} encodedPath - La ruta relativa del archivo .eml a descargar, ya codificada.
-         * @param {string} originalFilename - El nombre original del archivo para la descarga.
+         * Performs the actual download of the .eml file by creating a temporary link and simulating a click.
+         * Called after confirming the action (if the email was spam) or directly if not spam.
+         * @param {string} encodedPath - The relative path of the .eml file to download, already URI encoded.
+         * @param {string} originalFilename - The original filename for the download.
          */
         function performActualDownload(encodedPath, originalFilename) {
-            console.debug(`[DEBUG_FRONTEND] Iniciando descarga efectiva para archivo: '${originalFilename}' (Path: '${encodedPath}').`);
+            console.log(getTranslatedString('console_initiating_download', { originalFilename: originalFilename, encodedPath: encodedPath }));
             const link = document.createElement('a');
             link.href = `/download-eml?path=${encodedPath}`;
             link.download = originalFilename;
+            document.body.appendChild(link); // Append to body to ensure it's clickable in all browsers
             link.click();
-            console.info(`[INFO_FRONTEND] Solicitud de descarga iniciada para el archivo: '${originalFilename}'.`);
+            document.body.removeChild(link); // Clean up the temporary link
         }
 
-        // --- Funciones Auxiliares ---
-
         /**
-         * Formatea una cadena de fecha de "DD-MM-AAAA" a "DD/MM/AAAA".
-         * @param {string} dateStr - La cadena de fecha en formato "DD-MM-AAAA".
-         * @returns {string} La fecha formateada o 'Fecha desconocida' si la entrada es nula o vacía.
+         * Formats a date string from "DD-MM-YYYY" to "DD/MM/YYYY".
+         * @param {string} dateStr - The date string in "DD-MM-YYYY" format.
+         * @returns {string} The formatted date or 'Unknown date' if input is null or empty.
          */
         function formatDate(dateStr) {
             if (!dateStr) {
-                console.warn('[WARN_FRONTEND] formatDate: Cadena de fecha inválida o vacía recibida.');
-                return 'Fecha desconocida';
+                return getTranslatedString('unknown_date');
             }
             return dateStr.replace(/-/g, '/');
         }
 
         /**
-         * Formatea una cadena de hora de "HH-mm" a "HH:mm".
-         * @param {string} timeStr - La cadena de hora en formato "HH-mm".
-         * @returns {string} La hora formateada o 'Hora desconocida' si la entrada es nula o vacía.
+         * Formats a time string from "HH-mm" to "HH:mm".
+         * @param {string} timeStr - The time string in "HH-mm" format.
+         * @returns {string} The formatted time or 'Unknown time' if input is null or empty.
          */
         function formatTime(timeStr) {
              if (!timeStr) {
-                 console.warn('[WARN_FRONTEND] formatTime: Cadena de hora inválida o vacía recibida.');
-                 return 'Hora desconocida';
+                 return getTranslatedString('unknown_time');
              }
             return timeStr.replace('-', ':');
         }
 
         /**
-         * Formatea un tamaño en bytes a un formato legible (Bytes, KB, MB, etc.).
-         * @param {number} bytes - El tamaño en bytes.
-         * @param {number} decimals - El número de decimales a mostrar. Por defecto es 2.
-         * @returns {string} El tamaño formateado con su unidad o 'Tamaño desconocido' si la entrada es nula, indefinida o 0.
+         * Formats a size in bytes to a human-readable format (Bytes, KB, MB, etc.).
+         * @param {number} bytes - The size in bytes.
+         * @param {number} decimals - The number of decimal places to show. Defaults to 2.
+         * @returns {string} The formatted size with its unit or 'Unknown size' if input is null, undefined, or 0.
          */
         function formatBytes(bytes, decimals = 2) {
             if (bytes === undefined || bytes === null || typeof bytes !== 'number' || bytes < 0) {
-                 console.warn('[WARN_FRONTEND] formatBytes: Entrada inválida o negativa recibida:', bytes);
-                 return 'Tamaño desconocido';
+                 console.warn(getTranslatedString('console_invalid_bytes_value', { bytes: bytes }));
+                 return getTranslatedString('unknown_size');
             }
              if (bytes === 0) return '0 Bytes';
 
@@ -1127,14 +1366,14 @@
         }
 
         /**
-         * Escapa caracteres HTML especiales en una cadena de texto para prevenir ataques de Cross-Site Scripting (XSS).
-         * Esto es crucial al mostrar contenido generado por el servidor o por el usuario directamente en el HTML.
-         * @param {string} str - La cadena de texto a escapar.
-         * @returns {string} La cadena con caracteres HTML escapados o una cadena vacía si la entrada es nula o vacía.
+         * Escapes special HTML characters in a text string to prevent Cross-Site Scripting (XSS) attacks.
+         * This is crucial when displaying server-generated or user-generated content directly in HTML.
+         * @param {string} str - The text string to escape.
+         * @returns {string} The string with HTML characters escaped, or an empty string if input is null or empty.
          */
         function escapeHTML(str) {
             if (!str || typeof str !== 'string') {
-                 console.warn('[WARN_FRONTEND] escapeHTML: Entrada inválida o no es una cadena recibida.');
+                 console.warn(getTranslatedString('console_invalid_input_escape_html', { str: str }));
                  return '';
             }
             const div = document.createElement('div');
@@ -1142,9 +1381,61 @@
             return div.innerHTML;
         }
 
-        // --- Inicialización ---
-        // Inicia la carga de los metadatos de correos cuando la página HTML se haya cargado completamente.
-        window.onload = loadAllEmailsForFiltering;
+        /**
+         * Fetches the language setting from the server and updates the UI.
+         */
+        async function fetchLanguageSettings() {
+            console.log(getTranslatedString('console_fetching_settings'));
+            try {
+                const response = await fetch('/get-settings');
+                if (!response.ok) {
+                    throw new Error(`HTTP status ${response.status}`);
+                }
+                const settings = await response.json();
+                if (settings && settings.lang) {
+                    currentLanguage = settings.lang;
+                    console.log(getTranslatedString('console_settings_fetch_success', { lang: currentLanguage }));
+                } else {
+                    console.warn(getTranslatedString('console_settings_fetch_error', { error: 'Invalid response structure' }));
+                }
+            } catch (error) {
+                console.error(getTranslatedString('console_settings_fetch_error', { error: error.message }));
+            } finally {
+                updateUIStrings(); // Update UI strings after fetching language (or defaulting)
+            }
+        }
+
+        /**
+         * Sends the selected language setting to the server to be saved.
+         * @param {string} lang - The language code to save ('en' or 'es').
+         */
+        async function saveLanguageSetting(lang) {
+            console.log(getTranslatedString('console_saving_language_setting', { lang: lang }));
+            try {
+                const response = await fetch('/set-settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ lang: lang })
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP status ${response.status}`);
+                }
+                console.log(getTranslatedString('console_language_saved_success'));
+                return true;
+            } catch (error) {
+                console.error(getTranslatedString('console_language_save_failed', { error: error.message }));
+                return false;
+            }
+        }
+
+        // Initiates loading of email metadata when the HTML page has fully loaded.
+        window.onload = async () => {
+            console.log(getTranslatedString('console_window_loaded_initiating'));
+            await fetchLanguageSettings(); // Fetch language settings first
+            loadAllEmailsForFiltering();
+        };
     </script>
 </body>
 </html>

@@ -1,31 +1,24 @@
 import os
-import logging
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 from urllib.parse import unquote, urlparse, parse_qs
-from datetime import datetime
 import email
 import email.policy
-import email.utils
 
-# --- Configuración Inicial del Sistema de Logging ---
-# Configura el sistema de logging para registrar mensajes informativos y superiores.
-# El formato incluye la marca de tiempo, el nivel del mensaje, el origen (SERVER) y el mensaje.
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [SERVER] - %(message)s')
+# --- Global Path Definitions and Variables ---
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+USER_HOME = os.path.expanduser("~")
+USER_DATA_DIR = os.path.join(USER_HOME, "Documents", "Pop3MailDownloader_UserData")
 
-# --- Nueva Definición de Rutas y Variables Globales ---
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))  # Directorio del script
-USER_HOME = os.path.expanduser("~")  # Home del usuario
-USER_DATA_DIR = os.path.join(USER_HOME, "Documents", "Pop3MailDownloader_UserData")  # Directorio base del usuario
-
-# Asegúrate de que el directorio de datos del usuario existe
+# Ensure the user data directory exists
 if not os.path.exists(USER_DATA_DIR):
-    logging.info(f"Creando directorio de datos del usuario en: {USER_DATA_DIR}")
     os.makedirs(USER_DATA_DIR)
 
-METADATA_FILE = os.path.join(USER_DATA_DIR, 'emails_metadata.json')  # Archivo de metadatos
-CORREOS_BASE_DIR = os.path.join(USER_DATA_DIR, 'emails')  # Directorio base de emails
-SPAM_SETTINGS_FILE = os.path.join(USER_DATA_DIR, 'spam_settings.json')  # Archivo de configuración de SPAM
+METADATA_FILE = os.path.join(USER_DATA_DIR, 'emails_metadata.json')
+CORREOS_BASE_DIR = os.path.join(USER_DATA_DIR, 'emails')
+SPAM_SETTINGS_FILE = os.path.join(USER_DATA_DIR, 'spam_settings.json')
+SETTINGS_FILE = os.path.join(USER_DATA_DIR, 'settings.json') # New settings file
+
 DEFAULT_SPAM_SETTINGS = {
     "score_limit": 0,
     "blacklist_words": [],
@@ -36,107 +29,274 @@ DEFAULT_SPAM_SETTINGS = {
     "whitelist_domains": []
 }
 
-# Variable global para almacenar en memoria los metadatos de los correos una vez cargados.
-# Se inicializa como None y se carga bajo demanda.
 emails_metadata = None
 spam_settings = None
+current_lang = "en" # Default language, will be updated by load_settings()
 
-# --- Funciones Auxiliares del Servidor ---
+# --- Translatable messages for server-side console logs and error pages ---
+SERVER_MESSAGES = {
+    "en": {
+        "creating_user_data_dir": "INFO: Creating user data directory: {dir}",
+        "loading_metadata_attempt": "INFO: Attempting to load metadata from: {file}",
+        "metadata_file_not_found": "WARNING: Metadata file not found at {file}. Initializing with empty data.",
+        "metadata_load_success": "INFO: Successfully loaded {count} emails from metadata.",
+        "metadata_json_decode_error": "ERROR: Failed to decode JSON from metadata file: {error}. Initializing with empty data.",
+        "metadata_load_unexpected_error": "ERROR: An unexpected error occurred while loading metadata: {error}. Initializing with empty data.",
+        "loading_spam_settings_attempt": "INFO: Attempting to load spam settings from: {file}",
+        "spam_settings_file_not_found": "WARNING: Spam settings file not found at {file}. Using default settings.",
+        "spam_settings_load_success": "INFO: Successfully loaded and processed spam settings.",
+        "spam_settings_json_decode_error": "ERROR: Failed to decode JSON from spam settings file: {error}. Using default settings.",
+        "spam_settings_load_unexpected_error": "ERROR: An unexpected error occurred while loading spam settings: {error}. Using default settings.",
+        "invalid_score_limit": "WARNING: Invalid 'score_limit' value '{value}'. Using default: {default}",
+        "invalid_type_for_key": "WARNING: Invalid type for '{key}'. Expected list, got {type}. Using default.",
+        "handling_get_request": "INFO: Handling GET request for path: {path}",
+        "resource_not_found": "WARNING: Resource not found: {path}",
+        "serving_static_file": "INFO: Serving static file: {file}",
+        "static_file_served_success": "INFO: Successfully served {file} with Content-Type: {content_type}",
+        "static_file_not_found": "ERROR: Static file not found: {file}",
+        "static_file_server_error": "ERROR: Internal Server Error serving file {file}: {error}",
+        "listing_eml_files": "INFO: Listing EML files from metadata.",
+        "no_email_metadata_found": "WARNING: No email metadata found or 'emails' key is missing.",
+        "sent_email_metadata_entries": "INFO: Sent {count} email metadata entries.",
+        "reading_eml_file": "INFO: Attempting to read EML file: {file}",
+        "invalid_or_missing_path_read": "ERROR: Invalid or missing file path for read-eml.",
+        "file_not_found_read": "ERROR: File not found: {file}",
+        "read_file_success": "INFO: Successfully read and sent content of {file}.",
+        "read_file_server_error": "ERROR: Internal Server Error reading file {file}: {error}",
+        "downloading_eml_file": "INFO: Attempting to download EML file: {file}",
+        "invalid_or_missing_path_download": "ERROR: Invalid or missing file path for download-eml.",
+        "file_not_found_download": "ERROR: File not found: {file}",
+        "download_file_success": "INFO: Successfully sent {file} for download.",
+        "download_file_server_error": "ERROR: Internal Server Error during file download from {file}: {error}",
+        "viewing_html_eml_file": "INFO: Attempting to view HTML EML file for path: {path}",
+        "no_valid_path_html_view": "ERROR: No valid 'path' parameter provided for HTML EML view.",
+        "security_alert_traversal": "SECURITY ALERT: Potential directory traversal detected. Attempted path: {path}",
+        "eml_file_not_found_html_view": "ERROR: EML file not found for HTML view: {file}",
+        "metadata_loading_failed_html_view": "ERROR: Metadata loading failed during HTML EML view. Cannot proceed.",
+        "email_metadata_not_found_html_view": "ERROR: Email metadata not found for path: {path}",
+        "extracted_html_content": "INFO: Extracted HTML content for {file}.",
+        "error_decoding_html_content": "WARNING: Error decoding HTML content from {file}: {error}",
+        "extracted_plain_text_content": "INFO: Extracted plain text content for {file}.",
+        "error_decoding_plain_text_content": "WARNING: Error decoding plain text content from {file}: {error}",
+        "critical_error_parsing_eml": "ERROR: Critical error parsing EML file {file}: {error}",
+        "path_validation_success": "INFO: Validated file path: {path}",
+        "path_missing_or_empty": "WARNING: 'path' parameter is missing or empty in query.",
+        "server_starting": "INFO: Starting server initialization.",
+        "server_listening": "INFO: Server listening on {ip}:{port}...",
+        "keyboard_interrupt": "INFO: KeyboardInterrupt detected. Shutting down server.",
+        "server_unexpected_error": "CRITICAL ERROR: Server encountered an unexpected exception: {error}",
+        "loading_settings_attempt": "INFO: Attempting to load settings from: {file}",
+        "settings_file_not_found": "WARNING: Settings file not found at {file}. Creating default.",
+        "settings_load_success": "INFO: Successfully loaded settings. Current language: {lang}",
+        "invalid_lang_setting": "WARNING: Invalid 'lang' setting '{lang}'. Defaulting to 'en'.",
+        "settings_json_decode_error": "ERROR: Failed to decode JSON from settings file: {error}. Defaulting to 'en'.",
+        "settings_load_unexpected_error": "ERROR: An unexpected error occurred while loading settings: {error}. Defaulting to 'en'.",
+        "sent_settings": "INFO: Sent settings to client. Language: {lang}",
+        "error_page_metadata_title": "Metadata Loading Error",
+        "error_page_metadata_message": "Could not load email metadata. Please check server logs for more details.",
+        "error_page_email_not_found_title": "Email Not Found in Metadata",
+        "error_page_email_not_found_message1": "No metadata found for the requested email at path: {path}.",
+        "error_page_email_not_found_message2": "Ensure the file exists and emails_metadata.json is up-to-date.",
+        "received_set_settings_request": "INFO: Received /set-settings request. New language: {lang}",
+        "lang_setting_updated": "INFO: Language setting updated to: {lang}",
+        "error_processing_set_settings": "ERROR: Error processing /set-settings request: {error}",
+        "invalid_json_set_settings": "ERROR: Invalid JSON received for /set-settings: {error}",
+        "preview_simplified_message": "This is a simplified representation of the email. To view the full content with its original formatting, please download the file.",
+        "preview_download_button": "Download Email",
+        "preview_spam_warning": "Warning!<br>This email has been identified as SPAM.<br>Exercise caution when interacting with its content, as it could compromise your personal information.",
+        "preview_modal_security_alert": "Security Alert.",
+        "preview_modal_spam_marked": "This Email is marked as SPAM.",
+        "preview_modal_spam_score": "Spam Score:",
+        "preview_modal_download_malicious_warning": "Downloading it could expose your device to malicious software or reveal personal information.",
+        "preview_modal_continue_risk": "Do you wish to continue at your own risk?",
+        "preview_modal_download_anyway": "Download Anyway",
+        "preview_modal_cancel": "Cancel",
+        "preview_date_time": "Date & Time:",
+        "preview_from": "From:",
+        "preview_to": "To:",
+        "preview_cc": "CC:",
+        "preview_subject": "Subject:",
+        "preview_account": "Account:",
+        "preview_no_content": "No viewable content found in this email."
+    },
+    "es": {
+        "creating_user_data_dir": "INFO: Creando directorio de datos de usuario: {dir}",
+        "loading_metadata_attempt": "INFO: Intentando cargar metadatos desde: {file}",
+        "metadata_file_not_found": "ADVERTENCIA: Archivo de metadatos no encontrado en {file}. Inicializando con datos vacíos.",
+        "metadata_load_success": "INFO: Se cargaron {count} correos electrónicos de los metadatos exitosamente.",
+        "metadata_json_decode_error": "ERROR: Fallo al decodificar JSON del archivo de metadatos: {error}. Inicializando con datos vacíos.",
+        "metadata_load_unexpected_error": "ERROR: Ocurrió un error inesperado al cargar metadatos: {error}. Inicializando con datos vacíos.",
+        "loading_spam_settings_attempt": "INFO: Intentando cargar la configuración de spam desde: {file}",
+        "spam_settings_file_not_found": "ADVERTENCIA: Archivo de configuración de spam no encontrado en {file}. Usando la configuración predeterminada.",
+        "spam_settings_load_success": "INFO: Configuración de spam cargada y procesada exitosamente.",
+        "spam_settings_json_decode_error": "ERROR: Fallo al decodificar JSON del archivo de configuración de spam: {error}. Usando la configuración predeterminada.",
+        "spam_settings_load_unexpected_error": "ERROR: Ocurrió un error inesperado al cargar la configuración de spam: {error}. Usando la configuración predeterminada.",
+        "invalid_score_limit": "ADVERTENCIA: Valor no válido para 'score_limit' '{value}'. Usando el predeterminado: {default}",
+        "invalid_type_for_key": "ADVERTENCIA: Tipo no válido para '{key}'. Se esperaba una lista, se obtuvo {type}. Usando el predeterminado.",
+        "handling_get_request": "INFO: Manejando solicitud GET para la ruta: {path}",
+        "resource_not_found": "ADVERTENCIA: Recurso no encontrado: {path}",
+        "serving_static_file": "INFO: Sirviendo archivo estático: {file}",
+        "static_file_served_success": "INFO: Archivo {file} servido exitosamente con Content-Type: {content_type}",
+        "static_file_not_found": "ERROR: Archivo estático no encontrado: {file}",
+        "static_file_server_error": "ERROR: Error interno del servidor al servir el archivo {file}: {error}",
+        "listing_eml_files": "INFO: Listando archivos EML desde metadatos.",
+        "no_email_metadata_found": "ADVERTENCIA: No se encontraron metadatos de correo electrónico o falta la clave 'emails'.",
+        "sent_email_metadata_entries": "INFO: Se enviaron {count} entradas de metadatos de correo electrónico.",
+        "reading_eml_file": "INFO: Intentando leer archivo EML: {file}",
+        "invalid_or_missing_path_read": "ERROR: Ruta de archivo no válida o faltante para leer EML.",
+        "file_not_found_read": "ERROR: Archivo no encontrado: {file}",
+        "read_file_success": "INFO: Contenido de {file} leído y enviado exitosamente.",
+        "read_file_server_error": "ERROR: Error interno del servidor al leer el archivo {file}: {error}",
+        "downloading_eml_file": "INFO: Intentando descargar archivo EML: {file}",
+        "invalid_or_missing_path_download": "ERROR: Ruta de archivo no válida o faltante para descargar EML.",
+        "file_not_found_download": "ERROR: Archivo no encontrado: {file}",
+        "download_file_success": "INFO: Archivo {file} enviado para descarga exitosamente.",
+        "download_file_server_error": "ERROR: Error interno del servidor durante la descarga del archivo desde {file}: {error}",
+        "viewing_html_eml_file": "INFO: Intentando ver archivo EML HTML para la ruta: {path}",
+        "no_valid_path_html_view": "ERROR: No se proporcionó un parámetro 'path' válido para la vista HTML EML.",
+        "security_alert_traversal": "ALERTA DE SEGURIDAD: Intento de recorrido de directorio detectado. Ruta intentada: {path}",
+        "eml_file_not_found_html_view": "ERROR: Archivo EML no encontrado para la vista HTML: {file}",
+        "metadata_loading_failed_html_view": "ERROR: Fallo al cargar metadatos durante la vista HTML EML. No se puede continuar.",
+        "email_metadata_not_found_html_view": "ERROR: Metadatos de correo electrónico no encontrados para la ruta: {path}",
+        "extracted_html_content": "INFO: Contenido HTML extraído para {file}.",
+        "error_decoding_html_content": "ADVERTENCIA: Error al decodificar contenido HTML de {file}: {error}",
+        "extracted_plain_text_content": "INFO: Contenido de texto plano extraído para {file}.",
+        "error_decoding_plain_text_content": "ADVERTENCIA: Error al decodificar contenido de texto plano de {file}: {error}",
+        "critical_error_parsing_eml": "ERROR: Error crítico al analizar el archivo EML {file}: {error}",
+        "path_validation_success": "INFO: Ruta de archivo validada: {path}",
+        "path_missing_or_empty": "ADVERTENCIA: El parámetro 'path' falta o está vacío en la consulta.",
+        "server_starting": "INFO: Iniciando la inicialización del servidor.",
+        "server_listening": "INFO: Servidor escuchando en {ip}:{port}...",
+        "keyboard_interrupt": "INFO: Interrupción de teclado detectada. Apagando el servidor.",
+        "server_unexpected_error": "ERROR CRÍTICO: El servidor encontró una excepción inesperada: {error}",
+        "loading_settings_attempt": "INFO: Intentando cargar la configuración desde: {file}",
+        "settings_file_not_found": "ADVERTENCIA: Archivo de configuración no encontrado en {file}. Creando predeterminado.",
+        "settings_load_success": "INFO: Configuración cargada exitosamente. Idioma actual: {lang}",
+        "invalid_lang_setting": "ADVERTENCIA: Configuración de 'lang' no válida '{lang}'. Predeterminado a 'en'.",
+        "settings_json_decode_error": "ERROR: Fallo al decodificar JSON del archivo de configuración: {error}. Predeterminado a 'en'.",
+        "settings_load_unexpected_error": "ERROR: Ocurrió un error inesperado al cargar la configuración: {error}. Predeterminado a 'en'.",
+        "sent_settings": "INFO: Configuración enviada al cliente. Idioma: {lang}",
+        "error_page_metadata_title": "Error al Cargar Metadatos",
+        "error_page_metadata_message": "No se pudieron cargar los metadatos del correo electrónico. Por favor, revise los registros del servidor para más detalles.",
+        "error_page_email_not_found_title": "Correo Electrónico no Encontrado en Metadatos",
+        "error_page_email_not_found_message1": "No se encontraron metadatos para el correo electrónico solicitado en la ruta: {path}.",
+        "error_page_email_not_found_message2": "Asegúrese de que el archivo exista y que el archivo emails_metadata.json esté actualizado.",
+        "received_set_settings_request": "INFO: Solicitud /set-settings recibida. Nuevo idioma: {lang}",
+        "lang_setting_updated": "INFO: Configuración de idioma actualizada a: {lang}",
+        "error_processing_set_settings": "ERROR: Error al procesar la solicitud /set-settings: {error}",
+        "invalid_json_set_settings": "ERROR: JSON no válido recibido para /set-settings: {error}",
+        "preview_simplified_message": "Esta es una representación simplificada del Correo Electrónico. Para visualizar el contenido completo, por favor descargue el archivo.",
+        "preview_download_button": "Descargar Correo Electrónico",
+        "preview_spam_warning": "¡Advertencia!<br>Este correo ha sido identificado como SPAM.<br>Se recomienda precaución al interactuar con su contenido, ya que podría comprometer su información personal.",
+        "preview_modal_security_alert": "Alerta de Seguridad.",
+        "preview_modal_spam_marked": "Este Correo Electrónico está marcado como SPAM.",
+        "preview_modal_spam_score": "Puntuación de Spam:",
+        "preview_modal_download_malicious_warning": "Descargarlo podría exponer su dispositivo a software malicioso o revelar información personal.",
+        "preview_modal_continue_risk": "¿Desea continuar bajo su propio riesgo?",
+        "preview_modal_download_anyway": "Descargar de todos modos",
+        "preview_modal_cancel": "Cancelar",
+        "preview_date_time": "Fecha y Hora:",
+        "preview_from": "De:",
+        "preview_to": "Para:",
+        "preview_cc": "CC:",
+        "preview_subject": "Asunto:",
+        "preview_account": "Cuenta:",
+        "preview_no_content": "No se encontró contenido visualizable en este Correo Electrónico."
+    }
+}
+
+def get_server_message(key, **kwargs):
+    """Retrieves a translated server message."""
+    lang_messages = SERVER_MESSAGES.get(current_lang, SERVER_MESSAGES["en"])
+    message = lang_messages.get(key, SERVER_MESSAGES["en"].get(key, f"MISSING_MESSAGE_KEY_{key}"))
+    return message.format(**kwargs)
 
 def _process_spam_config(config_dict, default_reference_config):
     """
-    Procesa un diccionario de configuración de spam, asegurando que las listas
-    sean sets de strings en minúsculas y que score_limit sea un entero.
-    Utiliza default_reference_config para los valores y tipos predeterminados.
+    Processes a spam configuration dictionary.
+    Ensures lists are converted to sets of lowercase strings and score_limit is an integer.
+    Uses default_reference_config for default values and types.
     """
     processed_config = {}
 
-    # Procesar score_limit (debe ser un entero)
+    # Process score_limit (must be an integer)
     raw_score_limit = config_dict.get("score_limit", default_reference_config["score_limit"])
     try:
         processed_config["score_limit"] = int(raw_score_limit)
     except (ValueError, TypeError):
-        logging.warning(
-            f"Valor de score_limit ('{raw_score_limit}') no es un entero válido. "
-            f"Usando por defecto: {default_reference_config['score_limit']}."
-        )
+        print(get_server_message("invalid_score_limit", value=raw_score_limit, default=default_reference_config['score_limit']))
         processed_config["score_limit"] = default_reference_config["score_limit"]
 
-    # Procesar todas las claves que se esperan como listas (se convertirán a sets)
+    # Process all keys expected as lists (will be converted to sets)
     list_keys = [
         "blacklist_words", "blacklist_emails", "blacklist_domains",
         "whitelist_words", "whitelist_emails", "whitelist_domains"
     ]
     for key in list_keys:
-        # Obtener el valor del config_dict, o del default_reference_config si no está en config_dict,
-        # o una lista vacía como último recurso.
         default_list_value = default_reference_config.get(key, [])
         raw_list_value = config_dict.get(key, default_list_value)
 
         if not isinstance(raw_list_value, list):
-            logging.warning(
-                f"Valor para '{key}' en la configuración de spam no es una lista. "
-                f"Se usará la lista predeterminada/vacía: {default_list_value}."
-            )
-            raw_list_value = default_list_value # Usar la lista predeterminada o vacía
+            print(get_server_message("invalid_type_for_key", key=key, type=type(raw_list_value).__name__))
+            raw_list_value = default_list_value
         
-        # Convertir cada elemento a string, luego a minúsculas, y finalmente a un set.
+        # Convert each item to a string, then to lowercase, and finally to a set.
         processed_config[key] = set(str(item).lower() for item in raw_list_value)
         
-    # Asegurar que todas las claves de default_reference_config estén en processed_config
+    # Ensure all keys from default_reference_config are in processed_config
     for key, default_val in default_reference_config.items():
         if key not in processed_config:
             if isinstance(default_val, list):
                 processed_config[key] = set(str(item).lower() for item in default_val)
-            else: # Para score_limit, ya manejado, pero por completitud.
+            else:
                 processed_config[key] = default_val
 
     return processed_config
 
 def load_metadata():
     """
-    Carga los metadatos de los correos electrónicos desde el archivo JSON configurado.
-    Actualiza la variable global `emails_metadata`.
-    Gestiona la ausencia del archivo y los errores de formato JSON para asegurar la robustez.
-    Retorna True si la carga fue exitosa, False en caso contrario.
+    Loads email metadata from the configured JSON file.
+    Updates the global `emails_metadata` variable.
+    Manages file absence and JSON format errors for robustness.
+    Returns True if loading was successful, False otherwise.
     """
     global emails_metadata
-    logging.info(f"Iniciando carga de metadatos desde: '{METADATA_FILE}'.")
+    print(get_server_message("loading_metadata_attempt", file=METADATA_FILE))
     
     if not os.path.exists(METADATA_FILE):
-        logging.warning(f"Archivo de metadatos no encontrado en '{METADATA_FILE}'. Inicializando metadatos vacíos.")
+        print(get_server_message("metadata_file_not_found", file=METADATA_FILE))
         emails_metadata = {'emails': [], 'total_emails': 0}
         return False
     
     try:
         with open(METADATA_FILE, 'r', encoding='utf-8') as f:
             emails_metadata = json.load(f)
-        logging.info(f"Metadatos cargados exitosamente. Total de registros de correos: {emails_metadata.get('total_emails', 0)}.")
+        print(get_server_message("metadata_load_success", count=len(emails_metadata.get('emails', []))))
         return True
-    except json.JSONDecodeError:
-        logging.error(f"Error de formato JSON al decodificar '{METADATA_FILE}'. Verifique la integridad del archivo.")
+    except json.JSONDecodeError as e:
+        print(get_server_message("metadata_json_decode_error", error=e))
         emails_metadata = {'emails': [], 'total_emails': 0}
         return False
     except Exception as e:
-        logging.critical(f"Error inesperado al cargar metadatos desde '{METADATA_FILE}': {e}", exc_info=True)
+        print(get_server_message("metadata_load_unexpected_error", error=e))
         emails_metadata = {'emails': [], 'total_emails': 0}
         return False
 
 def load_spam_settings():
     """
-    Carga la configuración del filtro de spam desde un archivo JSON.
-    Si el archivo no existe o hay un error, usa la configuración predeterminada.
-    La configuración cargada (o la predeterminada) se procesa para que las listas
-    sean sets de strings en minúsculas y score_limit sea un entero.
+    Loads spam filter settings from a JSON file.
+    If the file doesn't exist or there's an error, it uses default settings.
+    The loaded (or default) configuration is processed so that lists
+    are sets of lowercase strings and score_limit is an integer.
     """
     global spam_settings
-    logging.info(f"Cargando configuración de spam desde '{SPAM_SETTINGS_FILE}'")
+    print(get_server_message("loading_spam_settings_attempt", file=SPAM_SETTINGS_FILE))
 
     processed_default_settings = _process_spam_config(DEFAULT_SPAM_SETTINGS, DEFAULT_SPAM_SETTINGS)
 
     try:
         if not os.path.exists(SPAM_SETTINGS_FILE):
-            logging.warning(f"Archivo de configuración de spam no encontrado en '{SPAM_SETTINGS_FILE}'. Usando configuración predeterminada procesada.")
+            print(get_server_message("spam_settings_file_not_found", file=SPAM_SETTINGS_FILE))
             spam_settings = processed_default_settings
             return False 
         
@@ -144,24 +304,73 @@ def load_spam_settings():
             loaded_config_from_file = json.load(f)
         
         spam_settings = _process_spam_config(loaded_config_from_file, DEFAULT_SPAM_SETTINGS)
-        logging.info(f"Configuración de spam cargada y procesada exitosamente desde archivo.")
-        # logging.debug(f"Spam settings en uso: {spam_settings}") 
+        print(get_server_message("spam_settings_load_success"))
         return True
 
     except json.JSONDecodeError as e:
-        logging.error(f"Error al decodificar el archivo de configuración de spam '{SPAM_SETTINGS_FILE}': {e}. Usando configuración predeterminada procesada.")
+        print(get_server_message("spam_settings_json_decode_error", error=e))
         spam_settings = processed_default_settings
         return False
     except Exception as e:
-        logging.critical(f"Error inesperado al cargar la configuración de spam desde '{SPAM_SETTINGS_FILE}': {e}", exc_info=True)
+        print(get_server_message("spam_settings_load_unexpected_error", error=e))
         spam_settings = processed_default_settings
+        return False
+
+def load_settings():
+    """
+    Loads application settings from a JSON file.
+    Updates the global `current_lang` variable.
+    """
+    global current_lang
+    print(get_server_message("loading_settings_attempt", file=SETTINGS_FILE))
+    try:
+        if not os.path.exists(SETTINGS_FILE):
+            print(get_server_message("settings_file_not_found", file=SETTINGS_FILE))
+            # Create a default settings.json if it doesn't exist
+            with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
+                json.dump({"lang": "en"}, f, indent=4)
+            current_lang = "en"
+            return False
+        
+        with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
+            settings = json.load(f)
+            if "lang" in settings and settings["lang"] in ["en", "es"]:
+                current_lang = settings["lang"]
+                print(get_server_message("settings_load_success", lang=current_lang))
+            else:
+                print(get_server_message("invalid_lang_setting", lang=settings.get("lang", "N/A")))
+                current_lang = "en" # Fallback to English
+        return True
+    except json.JSONDecodeError as e:
+        print(get_server_message("settings_json_decode_error", error=e))
+        current_lang = "en"
+        return False
+    except Exception as e:
+        print(get_server_message("settings_load_unexpected_error", error=e))
+        current_lang = "en"
+        return False
+
+def save_settings(lang):
+    """
+    Saves the current language setting to the settings.json file.
+    """
+    global current_lang
+    try:
+        with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
+            json.dump({"lang": lang}, f, indent=4)
+        current_lang = lang
+        print(get_server_message("lang_setting_updated", lang=lang))
+        return True
+    except Exception as e:
+        print(get_server_message("error_processing_set_settings", error=e))
         return False
 
 def determine_email_spam_status(email_data, current_spam_settings):
     """
-    Determina si un correo es spam basado en email_data y la configuración de spam procesada.
-    Devuelve True si es spam, False en caso contrario.
+    Determines if an email is spam based on email_data and the processed spam configuration.
+    Returns True if it's spam, False otherwise.
     """
+    # Get spam filter criteria from current_spam_settings, with fallbacks
     score_limit = current_spam_settings.get("score_limit", 5) 
     whitelist_emails = current_spam_settings.get("whitelist_emails", set())
     whitelist_domains = current_spam_settings.get("whitelist_domains", set())
@@ -170,6 +379,7 @@ def determine_email_spam_status(email_data, current_spam_settings):
     whitelist_words = current_spam_settings.get("whitelist_words", set())
     blacklist_words = current_spam_settings.get("blacklist_words", set())
 
+    # Extract sender and subject from email_data, converting to lowercase for case-insensitive comparison
     sender_full_email = email_data.get('sender', '')
     sender_email_lower = ''
     sender_domain = ''
@@ -182,89 +392,105 @@ def determine_email_spam_status(email_data, current_spam_settings):
             if len(parts) > 1 and parts[1]: 
                  sender_domain = parts[1]
 
-    # 1. Whitelists de spam_settings (MÁXIMA PRIORIDAD)
-    # 1a. Por remitente (email/dominio)
+    # Priority 1: Whitelists from spam_settings (highest priority)
+    # 1a. By sender (email/domain)
     if (sender_email_lower and sender_email_lower in whitelist_emails) or \
        (sender_domain and sender_domain in whitelist_domains):
-        return False # No es spam
-    # 1b. Por palabras clave en el asunto
+        return False
+    # 1b. By keywords in the subject
     if any(word in subject_lower for word in whitelist_words):
-        return False # No es spam
+        return False
 
-    # 2. Blacklists de spam_settings
-    # 2a. Por remitente (email/dominio)
+    # Priority 2: Blacklists from spam_settings
+    # 2a. By sender (email/domain)
     if (sender_email_lower and sender_email_lower in blacklist_emails) or \
        (sender_domain and sender_domain in blacklist_domains):
-        return True # Es spam
-    # 2b. Por palabras clave en el asunto
+        return True
+    # 2b. By keywords in the subject
     if any(word in subject_lower for word in blacklist_words):
-        return True # Es spam
+        return True
 
-    # 3. Campos preexistentes en metadata (spam_filter_whitelist tiene prioridad sobre spam_filter)
+    # Priority 3: Pre-existing fields in metadata (spam_filter_whitelist has priority over spam_filter)
     if email_data.get('spam_filter_whitelist', 'no').lower() == 'yes': return False
     if email_data.get('spam_filter', 'no').lower() == 'yes': return True
         
-    # 4. Spam score
+    # Priority 4: Spam score
     current_spam_score_raw = email_data.get('spam_score')
     if current_spam_score_raw is not None:
         try:
-            if float(current_spam_score_raw) > score_limit: return True
-        except (ValueError, TypeError): pass 
+            if float(current_spam_score_raw) > score_limit:
+                return True
+        except (ValueError, TypeError):
+            print(get_server_message("invalid_score_value", value=current_spam_score_raw))
+            pass # Continue to default
             
-    return False # Por defecto, no es spam
+    # Default: not spam
+    return False
 
-# --- Clase Manejadora de Solicitudes HTTP ---
+# --- HTTP Request Handler Class ---
 
 class RequestHandler(BaseHTTPRequestHandler):
     """
-    Manejador de solicitudes HTTP personalizado. Extiende BaseHTTPRequestHandler para
-    servir archivos estáticos, listar metadatos de correos, y gestionar la visualización,
-    lectura y descarga de archivos .eml.
+    Custom HTTP request handler. Extends BaseHTTPRequestHandler to
+    serve static files, list email metadata, and manage viewing,
+    reading, and downloading of .eml files.
     """
 
     def log_message(self, format, *args):
         """
-        Sobrescribe el método log_message para suprimir los mensajes de registro
-        de acceso HTTP por defecto, manteniendo los logs del servidor más limpios.
+        Overrides the default log_message to suppress HTTP access logs,
+        keeping server logs cleaner.
         """
         return
 
     def do_GET(self):
         """
-        Maneja todas las solicitudes HTTP GET entrantes.
-        Analiza la URL solicitada y enruta la petición a la función de manejo apropiada.
+        Handles all incoming HTTP GET requests.
+        Parses the requested URL and routes the request to the appropriate handler function.
         """
-        logging.info(f"Petición GET recibida para la ruta: '{self.path}'.")
         parsed_path = urlparse(self.path)
         path = parsed_path.path
         query_params = parse_qs(parsed_path.query)
 
+        print(get_server_message("handling_get_request", path=path))
+
+        # Route requests based on the path
         if path == '/' or path == '/index.html':
-            logging.info("Ruta solicitada: Página principal. Sirviendo 'index.html'.")
             self.serve_static_file('index.html')
         elif path == '/list-eml':
-            logging.info("Ruta solicitada: Listado de correos. Procesando petición de metadatos.")
             self.list_eml_files_from_metadata(query_params)
         elif path.startswith('/read-eml'):
-            logging.info("Ruta solicitada: Lectura de archivo .eml (texto plano).")
             self.read_eml_file()
         elif path.startswith('/download-eml'):
-            logging.info("Ruta solicitada: Descarga de archivo .eml.")
             self.download_eml_file()
         elif path.startswith('/view-html-eml'):
-            logging.info("Ruta solicitada: Vista previa HTML de archivo .eml.")
             self.view_html_eml_file()
+        elif path == '/get-settings': # New endpoint to get language settings
+            self.send_settings()
         else:
-            logging.warning(f"Recurso no encontrado para la ruta: '{self.path}'. Respondiendo con 404.")
-            self.send_error(404, "Recurso No Encontrado")
+            print(get_server_message("resource_not_found", path=path))
+            self.send_error(404, get_server_message("resource_not_found", path=""))
+
+    def do_POST(self):
+        """
+        Handles all incoming HTTP POST requests.
+        Used for updating settings.
+        """
+        parsed_path = urlparse(self.path)
+        path = parsed_path.path
+
+        if path == '/set-settings':
+            self.set_settings()
+        else:
+            self.send_error(404, get_server_message("resource_not_found", path=""))
 
     def serve_static_file(self, filename):
         """
-        Sirve un archivo estático desde el sistema de archivos local.
-        Determina el Content-Type adecuado basado en la extensión del archivo.
+        Serves a static file from the local filesystem.
+        Determines the appropriate Content-Type based on the file extension.
         """
         file_path_to_serve = os.path.join(SCRIPT_DIR, filename)
-        logging.info(f"Intentando servir archivo estático: '{file_path_to_serve}'.")
+        print(get_server_message("serving_static_file", file=file_path_to_serve))
         try:
             content_type = 'application/octet-stream' 
             if filename.endswith('.html'):
@@ -283,37 +509,32 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_header('Content-Type', content_type)
             self.end_headers()
             self.wfile.write(content)
-            logging.info(f"Archivo estático '{file_path_to_serve}' servido correctamente con Content-Type: {content_type}.")
+            print(get_server_message("static_file_served_success", file=filename, content_type=content_type))
 
         except FileNotFoundError:
-            logging.error(f"Error: El archivo estático '{file_path_to_serve}' no fue encontrado.")
-            self.send_error(404, "Archivo No Encontrado")
+            print(get_server_message("static_file_not_found", file=file_path_to_serve))
+            self.send_error(404, get_server_message("static_file_not_found", file=""))
         except Exception as e:
-            logging.error(f"Error inesperado al servir el archivo estático '{file_path_to_serve}': {e}", exc_info=True)
-            self.send_error(500, "Error Interno del Servidor al servir el archivo.")
+            print(get_server_message("static_file_server_error", file=filename, error=e))
+            self.send_error(500, get_server_message("static_file_server_error", file="", error=""))
 
     def list_eml_files_from_metadata(self, query_params):
         """
-        Carga y envía los metadatos de todos los correos electrónicos en formato JSON.
-        Esta función es utilizada por el frontend para poblar la tabla principal.
+        Loads and sends metadata for all emails in JSON format.
+        This function is used by the frontend to populate the main table.
         """
-        global emails_metadata, spam_settings # Ensure spam_settings is accessible
+        global emails_metadata, spam_settings
+        print(get_server_message("listing_eml_files"))
         load_metadata()
-
-        # spam_settings global ya está procesado y listo para usar.
-        # Si spam_settings no se cargó (ej. error al inicio), determine_email_spam_status usará sus propios fallbacks.
 
         processed_emails = []
         if emails_metadata and 'emails' in emails_metadata:
             for email_data in emails_metadata['emails']:
-                # Asegurarse de que spam_settings no sea None antes de pasarlo.
-                # Si es None, significa que la carga inicial falló críticamente.
-                # En tal caso, determine_email_spam_status debería usar DEFAULT_SPAM_SETTINGS
-                # o su propia lógica interna de fallback si current_spam_settings es None.
-                # Para ser más explícito, podemos pasar DEFAULT_SPAM_SETTINGS si spam_settings es None.
                 current_settings_to_use = spam_settings if spam_settings is not None else _process_spam_config(DEFAULT_SPAM_SETTINGS, DEFAULT_SPAM_SETTINGS)
                 email_data['is_spam'] = determine_email_spam_status(email_data, current_settings_to_use)
                 processed_emails.append(email_data)
+        else:
+            print(get_server_message("no_email_metadata_found"))
 
         response_data = {
             'emails': processed_emails,
@@ -322,189 +543,194 @@ class RequestHandler(BaseHTTPRequestHandler):
             'limit': emails_metadata.get('total_emails', 0)
         }
 
-        logging.info(f"Preparando respuesta JSON con {len(response_data['emails'])} registros de metadatos de correos.")
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.end_headers()
         response_content = json.dumps(response_data, indent=4)
         self.wfile.write(response_content.encode('utf-8'))
-        logging.info("Respuesta JSON con metadatos de correos enviada exitosamente.")
+        print(get_server_message("sent_email_metadata_entries", count=len(processed_emails)))
 
     def read_eml_file(self):
         """
-        Lee el contenido de un archivo .eml especificado por el parámetro 'path' en la URL
-        y lo envía como texto plano en la respuesta HTTP.
+        Reads the content of an .eml file specified by the 'path' parameter in the URL
+        and sends it as plain text in the HTTP response.
         """
         full_path = self.get_path_from_query()
+        print(get_server_message("reading_eml_file", file=full_path))
         if not full_path:
-            logging.error("Solicitud de lectura de .eml rechazada: Ruta de archivo no válida o ausente.")
-            self.send_error(400, "Ruta de archivo no válida o ausente.")
+            print(get_server_message("invalid_or_missing_path_read"))
+            self.send_error(400, get_server_message("invalid_or_missing_path_read", file=""))
             return
 
-        logging.info(f"Intentando leer el contenido (texto plano) del archivo .eml: '{full_path}'.")
-
         if not os.path.exists(full_path):
-            logging.error(f"Error de lectura de .eml: Archivo no encontrado en la ruta: '{full_path}'.")
-            self.send_error(404, f"Archivo no encontrado: {os.path.basename(full_path)}")
+            print(get_server_message("file_not_found_read", file=full_path))
+            self.send_error(404, get_server_message("file_not_found_read", file=os.path.basename(full_path)))
             return
 
         self.send_response(200)
         self.send_header('Content-Type', 'text/plain')
         self.end_headers()
-
         try:
             with open(full_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             self.wfile.write(content.encode('utf-8')) 
-            logging.info(f"Contenido del archivo '{os.path.basename(full_path)}' leído y enviado como texto plano.")
-
+            print(get_server_message("read_file_success", file=os.path.basename(full_path)))
         except Exception as e:
-            logging.error(f"Error al leer el archivo '{os.path.basename(full_path)}' para visualización en texto plano: {e}", exc_info=True)
-            self.send_error(500, "Error interno del servidor al leer el archivo.")
+            print(get_server_message("read_file_server_error", file=full_path, error=e))
+            self.send_error(500, get_server_message("read_file_server_error", file="", error=""))
 
     def download_eml_file(self):
         """
-        Permite la descarga de un archivo .eml especificado por el parámetro 'path' en la URL.
-        Establece el encabezado Content-Disposition para forzar al navegador a descargar el archivo.
+        Allows downloading an .eml file specified by the 'path' parameter in the URL.
+        Sets the Content-Disposition header to force the browser to download the file.
         """
         full_path = self.get_path_from_query()
+        print(get_server_message("downloading_eml_file", file=full_path))
         if not full_path:
-            logging.error("Solicitud de descarga de .eml rechazada: Ruta de archivo no válida o ausente.")
-            self.send_error(400, "Ruta de archivo no válida o ausente.")
+            print(get_server_message("invalid_or_missing_path_download"))
+            self.send_error(400, get_server_message("invalid_or_missing_path_download", file=""))
             return
 
-        logging.info(f"Preparando archivo .eml para descarga: '{full_path}'.")
-
         if not os.path.exists(full_path):
-            logging.error(f"Error de descarga de .eml: Archivo no encontrado en la ruta: '{full_path}'.")
-            self.send_error(404, f"Archivo no encontrado: {os.path.basename(full_path)}")
+            print(get_server_message("file_not_found_download", file=full_path))
+            self.send_error(404, get_server_message("file_not_found_download", file=os.path.basename(full_path)))
             return
 
         self.send_response(200)
         self.send_header('Content-Type', 'application/octet-stream') 
         self.send_header('Content-Disposition', f'attachment; filename="{os.path.basename(full_path)}"')
         self.end_headers()
-
         try:
             with open(full_path, 'rb') as f:
                 self.wfile.write(f.read())
-            logging.info(f"Archivo '{os.path.basename(full_path)}' enviado exitosamente para descarga.")
-
+            print(get_server_message("download_file_success", file=os.path.basename(full_path)))
         except Exception as e:
-            logging.error(f"Error al leer el archivo '{os.path.basename(full_path)}' durante la descarga: {e}", exc_info=True)
-            self.send_error(500, "Error interno del servidor durante la descarga del archivo.")
+            print(get_server_message("download_file_server_error", file=full_path, error=e))
+            self.send_error(500, get_server_message("download_file_server_error", file="", error=""))
+
+    def send_error_page_for_view_html(self, code, title_key, message_content_html):
+        """Helper to send a custom HTML error page for view_html_eml_file."""
+        global current_lang
+        error_html = f"""
+        <!DOCTYPE html>
+        <html lang="{current_lang}">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>{get_server_message(title_key)}</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 20px; text-align: center; }}
+                h1 {{ color: #e74c3c; }}
+            </style>
+        </head>
+        <body>
+            <h1>{get_server_message(title_key)}</h1>
+            <p>{message_content_html}</p>
+        </body>
+        </html>
+        """
+        self.send_response(code)
+        self.send_header('Content-type', 'text/html; charset=utf-8')
+        self.end_headers()
+        self.wfile.write(error_html.encode('utf-8'))
 
     def view_html_eml_file(self):
         """
-        Genera una vista previa HTML de un archivo .eml.
-        Extrae el contenido HTML o de texto plano del correo y lo incrusta en una estructura HTML básica.
-        Implementa la nueva lógica de detección de SPAM y muestra los campos 'Para' y 'CC'.
+        Generates an HTML preview of an .eml file.
+        Extracts HTML or plain text content from the email and embeds it in a basic HTML structure.
+        Implements spam detection logic and displays 'To' and 'CC' fields.
         """
-        global spam_settings # Ensure spam_settings is accessible
-        rel_path_encoded = urlparse(self.path).query
-        query_params = parse_qs(rel_path_encoded)
-        rel_path = None
-        if 'path' in query_params and query_params['path']:
-            rel_path = unquote(query_params['path'][0])
+        global spam_settings, current_lang
 
-        if not rel_path:
-            logging.error("Solicitud de vista previa HTML de .eml rechazada: Parámetro 'path' no válido o ausente.")
-            self.send_error(400, "No se proporcionó un parámetro 'path' válido.")
+        # Extract 'path' parameter from the URL query
+        parsed_url = urlparse(self.path)
+        query_params = parse_qs(parsed_url.query)
+        
+        # This is the path as sent by the client, and as potentially stored in metadata.json
+        path_from_client_metadata = None
+        if 'path' in query_params and query_params['path']:
+            path_from_client_metadata = unquote(query_params['path'][0])
+
+        print(get_server_message("viewing_html_eml_file", path=path_from_client_metadata))
+
+        if not path_from_client_metadata:
+            print(get_server_message("no_valid_path_html_view"))
+            self.send_error(400, get_server_message("no_valid_path_html_view"))
             return
 
+        # --- Determine the actual relative path for file system access ---
+        # This part adjusts the path if it incorrectly starts with "emails/" or "emails\"
+        # due to how it might be stored in metadata.json (e.g., relative to USER_DATA_DIR).
+        normalized_path_from_client = path_from_client_metadata.replace('\\', '/')
+        path_segments = normalized_path_from_client.split('/')
+        
+        rel_path_for_filesystem = path_from_client_metadata # Default
+        if len(path_segments) > 1 and path_segments[0].lower() == 'emails':
+            rel_path_for_filesystem = '/'.join(path_segments[1:])
+            print(f"INFO: Path adjustment for filesystem access in view_html_eml_file: original '{path_from_client_metadata}', adjusted to '{rel_path_for_filesystem}'")
+
+        # Construct the full path for file system operations
         base_dir_emails = CORREOS_BASE_DIR
-        normalized_rel_path_for_join = os.path.normpath(rel_path)
-        full_path = os.path.join(base_dir_emails, normalized_rel_path_for_join)
+        normalized_rel_path_for_fs_join = os.path.normpath(rel_path_for_filesystem)
+        full_path = os.path.join(base_dir_emails, normalized_rel_path_for_fs_join)
+        # --- End path adjustment for file system ---
 
         if not os.path.realpath(full_path).startswith(os.path.realpath(base_dir_emails)):
-            logging.warning(f"Intento de acceso no autorizado fuera del directorio base detectado: '{full_path}'. Solicitud rechazada.")
-            self.send_error(403, "Acceso denegado a la ruta especificada.")
+            print(get_server_message("security_alert_traversal", path=full_path))
+            self.send_error(403, get_server_message("security_alert_traversal", path=full_path))
             return
 
-        logging.info(f"Procesando archivo .eml para generar vista previa HTML: '{full_path}'.")
-
         if not os.path.exists(full_path):
-            logging.error(f"Error de vista previa HTML de .eml: Archivo no encontrado en la ruta: '{full_path}'.")
-            self.send_error(404, f"Archivo no encontrado: {full_path}")
+            print(get_server_message("eml_file_not_found_html_view", file=full_path))
+            self.send_error_page_for_view_html(404, 
+                                               "error_page_email_not_found_title",
+                                               get_server_message("error_page_email_not_found_message1", path=path_from_client_metadata) + "<br>" +
+                                               get_server_message("error_page_email_not_found_message2") + 
+                                               f"<br><small>Attempted filesystem path: {full_path}</small>")
             return
 
         if not load_metadata():
-            logging.error("Fallo al cargar metadatos para generar la vista previa HTML. No se puede continuar.")
-            error_html = """
-            <!DOCTYPE html>
-            <html lang="es">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Error al Cargar Metadatos</title>
-                <style>
-                    body { font-family: Arial, sans-serif; margin: 20px; text-align: center; }
-                    h1 { color: #e74c3c; }
-                </style>
-            </head>
-            <body>
-                <h1>Error al Cargar Metadatos</h1>
-                <p>No se pudieron cargar los Correos Electrónicos. Por favor, revise los registros del servidor para más detalles.</p>
-            </body>
-            </html>
-            """
-            self.send_response(500)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-            self.wfile.write(error_html.encode('utf-8'))
+            print(get_server_message("metadata_loading_failed_html_view"))
+            self.send_error_page_for_view_html(500,
+                                               "error_page_metadata_title",
+                                               get_server_message("error_page_metadata_message"))
             return
 
-        email_metadata = None
-        normalized_rel_path = rel_path.replace('\\', '/') 
+        # Find the specific email's metadata
+        email_metadata_item = None
+        normalized_lookup_path = path_from_client_metadata.replace('\\', '/') 
         for email_entry in emails_metadata.get('emails', []):
             normalized_metadata_path = email_entry.get('path', '').replace('\\', '/')
-            if normalized_metadata_path == normalized_rel_path:
-                email_metadata = email_entry
+            if normalized_metadata_path == normalized_lookup_path:
+                email_metadata_item = email_entry
                 break
 
-        if not email_metadata:
-            logging.warning(f"No se encontraron metadatos para la ruta de correo: '{rel_path}'. El archivo 'emails_metadata.json' podría no estar actualizado.")
-            error_html = f"""
-            <!DOCTYPE html>
-            <html lang="es">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Correo Electrónico no Encontrado en Metadatos</title>
-                <style>
-                    body {{ font-family: Arial, sans-serif; margin: 20px; text-align: center; }}
-                    h1 {{ color: #e74c3c; }}
-                </style>
-            </head>
-            <body>
-                <h1>Correo Electrónico no Encontrado en Metadatos</h1>
-                <p>No se encontraron metadatos para el Correo Electrónico solicitado en la ruta: {rel_path}.</p>
-                <p>Asegúrate de que el archivo exista y que el archivo emails_metadata.json esté actualizado.</p>
-            </body>
-            </html>
-            """
-            self.send_response(404)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-            self.wfile.write(error_html.encode('utf-8'))
+        if not email_metadata_item:
+            print(get_server_message("email_metadata_not_found_html_view", path=path_from_client_metadata))
+            self.send_error_page_for_view_html(404,
+                                               "error_page_email_not_found_title",
+                                               get_server_message("error_page_email_not_found_message1", path=path_from_client_metadata) + "<br>" +
+                                               get_server_message("error_page_email_not_found_message2"))
             return
 
-        subject_header = email_metadata.get('subject', 'Sin asunto')
-        from_header = email_metadata.get('sender', 'Remitente desconocido')
-        account_recipient_header = email_metadata.get('recipient', 'Cuenta desconocida')
-        to_recipients = email_metadata.get('to', [])
-        cc_recipients = email_metadata.get('cc', [])
-        date_str = email_metadata.get('date', 'Fecha desconocida')
-        time_str = email_metadata.get('time', 'Hora desconocida')
-        formatted_date_time = f"{date_str.replace('-', '/') if date_str and date_str != 'Fecha desconocida' else 'Fecha desconocida'} {time_str.replace('-', ':') if time_str and time_str != 'Hora desconocida' else 'Hora desconocida'}"
+        # Extract email headers and details from metadata
+        subject_header = email_metadata_item.get('subject', 'No Subject')
+        from_header = email_metadata_item.get('sender', 'Unknown Sender')
+        account_recipient_header = email_metadata_item.get('recipient', 'Unknown Account')
+        to_recipients = email_metadata_item.get('to', [])
+        cc_recipients = email_metadata_item.get('cc', [])
+        date_str = email_metadata_item.get('date', 'Unknown Date')
+        time_str = email_metadata_item.get('time', 'Unknown Time')
+        formatted_date_time = f"{date_str.replace('-', '/') if date_str and date_str != 'Unknown Date' else 'Unknown Date'} {time_str.replace('-', ':') if time_str and time_str != 'Unknown Time' else 'Unknown Time'}"
         
+        # Determine if the email is spam
         current_settings_to_use = spam_settings if spam_settings is not None else _process_spam_config(DEFAULT_SPAM_SETTINGS, DEFAULT_SPAM_SETTINGS)
-        is_spam = determine_email_spam_status(email_metadata, current_settings_to_use)
-        spam_score_for_modal = email_metadata.get('spam_score') 
+        is_spam = determine_email_spam_status(email_metadata_item, current_settings_to_use)
+        spam_score_for_modal = email_metadata_item.get('spam_score') 
 
         html_content = None
         text_content = None
-        charset = 'utf-8'
+        charset = 'utf-8' # Default charset
 
         try:
             with open(full_path, 'rb') as f:
@@ -513,43 +739,45 @@ class RequestHandler(BaseHTTPRequestHandler):
             for part in msg.walk():
                 ctype = part.get_content_type()
                 cdisp = part.get('Content-Disposition')
-
+                # Skip attachments
                 if cdisp and cdisp.startswith('attachment'):
                     continue
-
+                # Try to get HTML content
                 if ctype == 'text/html':
                     try:
                         charset = part.get_content_charset() or charset
                         html_content = part.get_payload(decode=True).decode(charset, errors='replace')
-                        logging.info(f"Contenido HTML extraído y decodificado para '{os.path.basename(full_path)}'.")
-                        break 
+                        print(get_server_message("extracted_html_content", file=os.path.basename(full_path)))
+                        break # Prefer HTML content
                     except Exception as e:
-                        logging.warning(f"Error al decodificar la parte HTML del correo '{os.path.basename(full_path)}' (Charset: {charset}): {e}. Intentando con texto plano si está disponible.")
-                        html_content = "<p>Error al decodificar el contenido HTML.</p>"
-
+                        print(get_server_message("error_decoding_html_content", file=os.path.basename(full_path), error=e))
+                        html_content = "<p>Error decoding HTML content.</p>"
+                # Try to get plain text content if HTML is not found or if it's the first text part
                 if ctype == 'text/plain' and text_content is None:
                     try:
                         charset = part.get_content_charset() or charset
                         text_content = part.get_payload(decode=True).decode(charset, errors='replace')
-                        logging.info(f"Contenido de texto plano extraído y decodificado para '{os.path.basename(full_path)}'.")
+                        print(get_server_message("extracted_plain_text_content", file=os.path.basename(full_path)))
                     except Exception as e:
-                        logging.warning(f"Error al decodificar la parte de texto plano del correo '{os.path.basename(full_path)}' (Charset: {charset}): {e}.")
-                        text_content = "Error al decodificar el contenido de texto plano."
+                        print(get_server_message("error_decoding_plain_text_content", file=os.path.basename(full_path), error=e))
+                        text_content = "Error decoding plain text content."
 
         except Exception as e:
-            logging.error(f"Ocurrió un error general al parsear el archivo .eml '{os.path.basename(full_path)}': {e}", exc_info=True)
+            # General error parsing the .eml file
+            print(get_server_message("critical_error_parsing_eml", file=full_path, error=e))
             html_content = None
-            text_content = "Error crítico al leer el contenido del Correo Electrónico. Verifique la integridad del archivo .eml."
+            text_content = "Critical error reading email content. Please check .eml file integrity."
 
         download_url = f"/download-eml?path={query_params['path'][0]}"
 
+        # Construct the final HTML page for the preview
         final_html_content = f"""
 <!DOCTYPE html>
-<html lang="es">
+<html lang="{current_lang}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vista Previa del Correo Electrónico: {subject_header}</title>
+    <title>Email Preview: {subject_header}</title>
     <style>
         html, body {{
             height: 100%;
@@ -774,40 +1002,40 @@ class RequestHandler(BaseHTTPRequestHandler):
     <div class="main-container">
         <div class="preview-header-actions">
             <div class="preview-message">
-                Esta es una representación simplificada del Correo Electrónico. Para visualizar el contenido completo con su formato original, por favor descargue el archivo.
+                {get_server_message('preview_simplified_message')}
             </div>
-            <a id="downloadPreviewBtn" href="{download_url}" class="download-button-header" download>Descargar Correo Electrónico</a>
+            <a id="downloadPreviewBtn" href="{download_url}" class="download-button-header" download>{get_server_message('preview_download_button')}</a>
         </div>
         {
-            '<div class="spam-warning-message">¡Advertencia!<br>Este correo ha sido identificado como SPAM.<br>Se recomienda precaución al interactuar con su contenido, ya que podría comprometer su información personal.</div>'
+            f'<div class="spam-warning-message">{get_server_message("preview_spam_warning")}</div>'
             if is_spam else ''
         }
         <div class="scrollable-email-content">
             <div class="email-details-preview">
                 <div class="left-details">
                     <div class="detail-pair">
-                        <strong>Fecha y Hora:</strong> <span class="detail-value">{formatted_date_time}</span>
+                        <strong>{get_server_message('preview_date_time')}</strong> <span class="detail-value">{formatted_date_time}</span>
                     </div>
                     <div class="detail-pair">
-                        <strong>De:</strong> <span class="detail-value">{from_header}</span>
+                        <strong>{get_server_message('preview_from')}</strong> <span class="detail-value">{from_header}</span>
                     </div>
                     {
                         '<div class="detail-pair">'
-                        '<strong>Para:</strong> <span class="detail-value">' + (', '.join(to_recipients) if to_recipients else 'N/A') + '</span>'
+                        f'<strong>{get_server_message("preview_to")}</strong> <span class="detail-value">' + (', '.join(to_recipients) if to_recipients else 'N/A') + '</span>'
                         '</div>'
                     }
                     {
                         '<div class="detail-pair">'
-                        '<strong>CC:</strong> <span class="detail-value">' + (', '.join(cc_recipients) if cc_recipients else 'N/A') + '</span>'
+                        f'<strong>{get_server_message("preview_cc")}</strong> <span class="detail-value">' + (', '.join(cc_recipients) if cc_recipients else 'N/A') + '</span>'
                         '</div>'
                     }
                     <div class="detail-pair">
-                        <strong>Asunto:</strong> <span class="detail-value">{subject_header}</span>
+                        <strong>{get_server_message('preview_subject')}</strong> <span class="detail-value">{subject_header}</span>
                     </div>
                 </div>
                 <div class="right-details">
                     <div class="detail-pair">
-                        <strong>Cuenta:</strong> <span class="detail-value">{account_recipient_header}</span>
+                        <strong>{get_server_message('preview_account')}</strong> <span class="detail-value">{account_recipient_header}</span>
                     </div>
                 </div>
             </div>
@@ -818,7 +1046,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         elif text_content:
             final_html_content += f"<pre>{text_content}</pre>"
         else:
-            final_html_content += "<p>No se encontró contenido visualizable en este Correo Electrónico.</p>"
+            final_html_content += f"<p>{get_server_message('preview_no_content')}</p>"
 
         final_html_content += """
             </div>
@@ -830,13 +1058,13 @@ class RequestHandler(BaseHTTPRequestHandler):
     <div id="previewSpamModalOverlay" style="display: none;">
         <div class="modal-content">
             <p class="modal-message">
-                Alerta de Seguridad.<br>Este Correo Electrónico está marcado como SPAM.<br>
-                Puntuación de Spam: {spam_score_for_modal if spam_score_for_modal is not None else 'N/A'}<br>
-                Descargarlo podría exponer su dispositivo a software malicioso o revelar información personal.<br>¿Desea continuar bajo su propio riesgo?
+                {get_server_message('preview_modal_security_alert')}<br>{get_server_message('preview_modal_spam_marked')}<br>
+                {get_server_message('preview_modal_spam_score')} {spam_score_for_modal if spam_score_for_modal is not None else 'N/A'}<br>
+                {get_server_message('preview_modal_download_malicious_warning')}<br>{get_server_message('preview_modal_continue_risk')}
             </p>
             <div class="modal-buttons">
-                <button id="previewConfirmDownloadBtn">Descargar de todos modos</button>
-                <button id="previewCancelDownloadBtn">Cancelar</button>
+                <button id="previewConfirmDownloadBtn">{get_server_message('preview_modal_download_anyway')}</button>
+                <button id="previewCancelDownloadBtn">{get_server_message('preview_modal_cancel')}</button>
             </div>
         </div>
     </div>
@@ -851,13 +1079,16 @@ class RequestHandler(BaseHTTPRequestHandler):
                 downloadBtn.addEventListener('click', function(event) {{
                     event.preventDefault(); 
                     spamModal.style.display = 'flex'; 
+                    console.log('{get_server_message("console_displaying_spam_warning")} for download in preview.');
                 }});
                 confirmDownloadBtn.addEventListener('click', function() {{
                     spamModal.style.display = 'none'; 
                     window.location.href = downloadBtn.href; 
+                    console.log('{get_server_message("console_spam_download_confirmed")}');
                 }});
                 cancelDownloadBtn.addEventListener('click', function() {{
                     spamModal.style.display = 'none'; 
+                    console.log('{get_server_message("console_spam_download_cancelled")}');
                 }});
             }}
         }});
@@ -871,53 +1102,106 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'text/html')
         self.end_headers()
         self.wfile.write(final_html_content.encode('utf-8'))
-        logging.info(f"Vista previa HTML del correo '{os.path.basename(full_path)}' generada y enviada exitosamente.")
 
+    def send_settings(self):
+        """
+        Sends the current language settings to the client.
+        """
+        global current_lang
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        response_content = json.dumps({"lang": current_lang})
+        self.wfile.write(response_content.encode('utf-8'))
+        print(get_server_message("sent_settings", lang=current_lang))
+
+    def set_settings(self):
+        """
+        Receives and saves language settings from the client.
+        """
+        global current_lang
+        content_length = int(self.headers['Content-Length'])
+        post_data = self.rfile.read(content_length)
+        try:
+            settings_data = json.loads(post_data.decode('utf-8'))
+            new_lang = settings_data.get('lang')
+            print(get_server_message("received_set_settings_request", lang=new_lang))
+            if new_lang and new_lang in ["en", "es"]:
+                if save_settings(new_lang):
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"status": "success", "lang": new_lang}).encode('utf-8'))
+                else:
+                    self.send_error(500, get_server_message("error_processing_set_settings", error="Failed to save settings"))
+            else:
+                self.send_error(400, get_server_message("invalid_lang_setting", lang=new_lang))
+        except json.JSONDecodeError as e:
+            print(get_server_message("invalid_json_set_settings", error=e))
+            self.send_error(400, get_server_message("invalid_json_set_settings", error=""))
+        except Exception as e:
+            print(get_server_message("error_processing_set_settings", error=e))
+            self.send_error(500, get_server_message("error_processing_set_settings", error=""))
 
     def get_path_from_query(self):
         """
-        Extrae y valida el parámetro 'path' de la cadena de consulta de la URL.
-        Implementa una medida de seguridad para prevenir ataques de 'Directory Traversal',
-        asegurando que la ruta solicitada esté dentro del directorio base permitido.
-        Retorna la ruta completa y validada del archivo, o None si es inválida o ausente.
+        Extracts and validates the 'path' parameter from the URL query string.
+        Implements a security measure to prevent Directory Traversal attacks,
+        ensuring the requested path is within the allowed base directory.
+        Returns the full, validated file path, or None if invalid or absent.
         """
         parsed_path = urlparse(self.path)
         query_params = parse_qs(parsed_path.query)
-        path = None
+        
+        path_from_query = None
         if 'path' in query_params and query_params['path']:
-            path = unquote(query_params['path'][0]) 
+            path_from_query = unquote(query_params['path'][0]) 
 
-        if not path:
-            logging.warning("El parámetro 'path' está ausente o vacío en la cadena de consulta.")
+        if not path_from_query:
+            print(get_server_message("path_missing_or_empty"))
             return None
+
+        # Adjust path if it incorrectly starts with "emails/" or "emails\"
+        # This is to compensate for metadata paths that might be relative to USER_DATA_DIR
+        # instead of CORREOS_BASE_DIR.
+        normalized_path_from_query = path_from_query.replace('\\', '/')
+        path_segments = normalized_path_from_query.split('/')
+        
+        actual_rel_path = path_from_query # Default to original
+        if len(path_segments) > 1 and path_segments[0].lower() == 'emails':
+            actual_rel_path = '/'.join(path_segments[1:])
+            print(f"INFO: Path adjustment in get_path_from_query: original '{path_from_query}', adjusted to '{actual_rel_path}'")
 
         base_dir_emails = CORREOS_BASE_DIR
-        full_path = os.path.normpath(os.path.join(base_dir_emails, path))
+        # Use actual_rel_path for joining
+        full_path = os.path.normpath(os.path.join(base_dir_emails, actual_rel_path))
 
+        # Security check: ensure the resolved path is within the base email directory
         if not os.path.realpath(full_path).startswith(os.path.realpath(base_dir_emails)):
-            logging.warning(f"Intento de acceso no autorizado detectado: La ruta solicitada '{full_path}' está fuera del directorio base permitido '{base_dir_emails}'.")
+            print(get_server_message("security_alert_traversal", path=full_path))
             return None
-
-        logging.debug(f"Ruta de archivo validada: '{full_path}'.")
+        print(get_server_message("path_validation_success", path=full_path))
         return full_path
 
-# --- Bloque Principal de Ejecución del Script ---
+# --- Main Script Execution Block ---
 
 if __name__ == '__main__':
+    # Load initial data and settings when the server starts
+    print(get_server_message("server_starting"))
+    load_settings() # Load language settings first
     load_metadata()  
     load_spam_settings() 
 
+    # Server configuration
     server_address = ('0.0.0.0', 8000)
     server = HTTPServer(server_address, RequestHandler)
 
-    logging.info(f'Servidor HTTP iniciado y escuchando en http://{server_address[0]}:{server_address[1]}.')
-    logging.info('El servidor es accesible en la red local. Presione Ctrl+C para detenerlo.')
-
+    print(get_server_message("server_listening", ip=server_address[0], port=server_address[1]))
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        logging.info('Señal de interrupción (Ctrl+C) recibida. Iniciando apagado ordenado del servidor...')
+        print(get_server_message("keyboard_interrupt"))
         server.shutdown() 
-        logging.info('Servidor HTTP detenido correctamente.')
     except Exception as e:
-        logging.critical(f"Ocurrió un error crítico e inesperado en el bucle principal del servidor: {e}", exc_info=True)
+        print(get_server_message("server_unexpected_error", error=e))
+        pass
